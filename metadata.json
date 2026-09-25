@@ -1,0 +1,6 @@
+{
+  "name": "Birthwish",
+  "description": "Create stylish, heartfelt digital birthday wishes with personalized stories, rainbow themes, emotional epistles, and secure celebratory cash gifts powered by Kora.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
