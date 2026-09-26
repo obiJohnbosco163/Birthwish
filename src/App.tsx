@@ -209,6 +209,9 @@ export default function App() {
         {(!user || currentView === 'landing') && (
           <LandingPage
             user={user}
+            wishes={wishes}
+            onViewWish={handlePreviewWish}
+            onCreateClick={handleCreateClick}
             onLoginSuccess={handleLoginSuccess}
             onOpenDashboard={handleDashboardClick}
             onSignOut={handleSignOut}

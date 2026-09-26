@@ -42,15 +42,18 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
+  // Filter strictly to only birthwishes created by this logged in user
+  const userWishes = user ? wishes.filter(w => w.userId === user.id) : [];
+
   // Compute strictly REAL metrics from wishes actually created by this user
-  const totalWishes = wishes.length;
-  const totalGiftAmount = wishes.reduce((sum, w) => sum + (w.hasGift ? (w.giftAmount || 0) : 0), 0);
-  const activeHoldingCount = wishes.filter(w => w.hasGift && w.giftStatus === 'holding').length;
-  const claimedCount = wishes.filter(w => w.hasGift && w.giftStatus === 'claimed').length;
+  const totalWishes = userWishes.length;
+  const totalGiftAmount = userWishes.reduce((sum, w) => sum + (w.hasGift ? (w.giftAmount || 0) : 0), 0);
+  const activeHoldingCount = userWishes.filter(w => w.hasGift && w.giftStatus === 'holding').length;
+  const claimedCount = userWishes.filter(w => w.hasGift && w.giftStatus === 'claimed').length;
 
   const categories = ['All', 'Father', 'Mother', 'Sister', 'Brother', 'Relation', 'Friend', 'Others'];
 
-  const filteredWishes = wishes.filter((w) => {
+  const filteredWishes = userWishes.filter((w) => {
     const matchesFilter = selectedFilter === 'All' || w.category === selectedFilter;
     const matchesSearch = 
       w.celebrantName.toLowerCase().includes(searchQuery.toLowerCase()) ||

@@ -323,10 +323,39 @@ export function generateStandaloneBirthwishHtml(wish: Birthwish): string {
         ${escapeHtml(wish.celebrantName)}
       </h2>
       ${wish.celebrantNickname ? `<p style="color: var(--secondary); font-size: 18px; font-weight: 600; margin-bottom: 16px;">&ldquo;${escapeHtml(wish.celebrantNickname)}&rdquo;</p>` : ''}
-      <div style="display: flex; justify-content: center; gap: 10px; margin-bottom: 28px; flex-wrap: wrap;">
+      <div style="display: flex; justify-content: center; gap: 10px; margin-bottom: 24px; flex-wrap: wrap;">
         <span class="badge">Honor: ${escapeHtml(wish.category)}</span>
         <span class="badge">Sent by: ${escapeHtml(wish.senderRelation)}</span>
       </div>
+
+      <!-- Chapter 3 Interactive Birthday Cake for Blowing Out Candles & Repeating Birthday Song -->
+      <div style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.12); border-radius: 20px; padding: 24px; margin-bottom: 28px; text-align: center;">
+        <div style="font-size: 13px; font-weight: 700; color: #f43f5e; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px;">
+          Make a Birthday Wish 🎂
+        </div>
+        <p id="cakeNotice" style="font-size: 12px; color: #cbd5e1; margin-bottom: 16px;">
+          Tap the candle flame to blow it out and make your secret wish!
+        </p>
+        
+        <div id="cakeContainer" onclick="toggleCandleBlow()" style="display: inline-flex; flex-direction: column; align-items: center; cursor: pointer; user-select: none; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+          <div id="flameEl" style="width: 20px; height: 26px; border-radius: 50% 50% 20% 20%; background: radial-gradient(circle at 50% 80%, #fef08a 0%, #f59e0b 60%, #ea580c 100%); box-shadow: 0 0 20px #f59e0b; animation: pulse 1s infinite alternate; margin-bottom: 2px;"></div>
+          <div style="width: 14px; height: 28px; background: repeating-linear-gradient(45deg, #f43f5e, #f43f5e 4px, #ffffff 4px, #ffffff 8px); border-radius: 4px 4px 0 0;"></div>
+          <div style="width: 90px; height: 32px; background: linear-gradient(135deg, #f472b6, #fb7185); border-radius: 12px; border-bottom: 3px solid #e11d48; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 800; color: white;">★ LOVE ★</div>
+          <div style="width: 130px; height: 38px; background: linear-gradient(135deg, #fef08a, #fde047); border-radius: 14px; border-bottom: 3px solid #ca8a04; margin-top: -4px; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800; color: #854d0e;">JOY & PEACE</div>
+          <div style="width: 180px; height: 46px; background: linear-gradient(135deg, #fb7185, #f43f5e); border-radius: 16px; border-bottom: 4px solid #be123c; margin-top: -4px; display: flex; align-items: center; justify-content: center; font-family: cursive; font-size: 16px; color: white; text-shadow: 0 1px 2px rgba(0,0,0,0.4);">Happy Birthday</div>
+          <div style="width: 210px; height: 10px; background: #e2e8f0; border-radius: 20px; margin-top: -2px; box-shadow: 0 4px 10px rgba(0,0,0,0.3);"></div>
+        </div>
+
+        <div style="margin-top: 18px; display: flex; justify-content: center; gap: 10px;">
+          <button id="blowBtn" class="btn-celebrate" onclick="toggleCandleBlow()" style="padding: 8px 18px; font-size: 12px;">
+            🎂 Blow Out Candle
+          </button>
+          <button id="musicLoopBtn" class="btn-secondary" onclick="toggleMusicLoop()" style="padding: 8px 16px; font-size: 12px;">
+            🎵 Birthday Song (Repeat)
+          </button>
+        </div>
+      </div>
+
       <div style="display: flex; justify-content: space-between; align-items: center;">
         <button class="btn-secondary" onclick="nextStage(2)">← Back</button>
         <button class="btn-celebrate" onclick="nextStage(4)">
@@ -533,26 +562,114 @@ export function generateStandaloneBirthwishHtml(wish: Birthwish): string {
       }
     }
 
+    let isCandleBlown = false;
+    let isMusicLooping = false;
+    let loopTimer = null;
+
+    function toggleCandleBlow() {
+      const flame = document.getElementById('flameEl');
+      const notice = document.getElementById('cakeNotice');
+      const blowBtn = document.getElementById('blowBtn');
+      if (!isCandleBlown) {
+        isCandleBlown = true;
+        if (flame) flame.style.display = 'none';
+        if (notice) notice.innerHTML = '🎉 <b>Candle Blown!</b> Birthday melody is playing in repeat!';
+        if (blowBtn) blowBtn.innerHTML = '🕯️ Relight Candle';
+        fireBurst();
+        startRepeatingMusic();
+      } else {
+        isCandleBlown = false;
+        if (flame) flame.style.display = 'block';
+        if (notice) notice.innerHTML = 'Tap the candle flame to blow it out and make your secret wish!';
+        if (blowBtn) blowBtn.innerHTML = '🎂 Blow Out Candle';
+      }
+    }
+
+    function toggleMusicLoop() {
+      if (isMusicLooping) {
+        stopRepeatingMusic();
+      } else {
+        startRepeatingMusic();
+      }
+    }
+
+    function startRepeatingMusic() {
+      isMusicLooping = true;
+      const btn = document.getElementById('musicLoopBtn');
+      if (btn) {
+        btn.innerHTML = '⏹ Stop Music 🎵';
+        btn.style.background = '#f43f5e';
+        btn.style.color = '#ffffff';
+      }
+      playChime();
+      if (loopTimer) clearInterval(loopTimer);
+      loopTimer = setInterval(() => {
+        if (isMusicLooping) {
+          playChime();
+        } else {
+          clearInterval(loopTimer);
+        }
+      }, 12500);
+    }
+
+    function stopRepeatingMusic() {
+      isMusicLooping = false;
+      if (loopTimer) clearInterval(loopTimer);
+      const btn = document.getElementById('musicLoopBtn');
+      if (btn) {
+        btn.innerHTML = '🎵 Birthday Song (Repeat)';
+        btn.style.background = '';
+        btn.style.color = '';
+      }
+    }
+
     function playChime() {
       try {
         const AudioContext = window.AudioContext || window.webkitAudioContext;
         if (!AudioContext) return;
         const ctx = new AudioContext();
-        const notes = [523.25, 659.25, 783.99, 1046.50, 1318.51]; // C5, E5, G5, C6, E6
-        notes.forEach((freq, idx) => {
-          const osc = ctx.createOscillator();
+        if (ctx.state === 'suspended') ctx.resume();
+
+        // Authentic Happy Birthday To You Melody Sequence [freq, beats]
+        const songNotes = [
+          [392.00, 0.75], [392.00, 0.25], [440.00, 1.0], [392.00, 1.0], [523.25, 1.0], [493.88, 2.0],
+          [392.00, 0.75], [392.00, 0.25], [440.00, 1.0], [392.00, 1.0], [587.33, 1.0], [523.25, 2.0],
+          [392.00, 0.75], [392.00, 0.25], [783.99, 1.0], [659.25, 1.0], [523.25, 1.0], [493.88, 1.0], [440.00, 2.0],
+          [698.46, 0.75], [698.46, 0.25], [659.25, 1.0], [523.25, 1.0], [587.33, 1.0], [523.25, 2.5]
+        ];
+
+        const beat = 0.44;
+        let t = ctx.currentTime + 0.05;
+
+        songNotes.forEach(([freq, dur]) => {
+          const osc1 = ctx.createOscillator();
+          const osc2 = ctx.createOscillator();
           const gain = ctx.createGain();
-          osc.type = 'sine';
-          osc.frequency.setValueAtTime(freq, ctx.currentTime + idx * 0.12);
-          gain.gain.setValueAtTime(0.18, ctx.currentTime + idx * 0.12);
-          gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + idx * 0.12 + 0.6);
-          osc.connect(gain);
+
+          osc1.type = 'triangle';
+          osc1.frequency.setValueAtTime(freq, t);
+
+          osc2.type = 'sine';
+          osc2.frequency.setValueAtTime(freq * 2, t);
+
+          const len = dur * beat;
+          gain.gain.setValueAtTime(0.001, t);
+          gain.gain.linearRampToValueAtTime(0.22, t + 0.02);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + len * 0.9);
+
+          osc1.connect(gain);
+          osc2.connect(gain);
           gain.connect(ctx.destination);
-          osc.start(ctx.currentTime + idx * 0.12);
-          osc.stop(ctx.currentTime + idx * 0.12 + 0.6);
+
+          osc1.start(t);
+          osc2.start(t);
+          osc1.stop(t + len * 0.9);
+          osc2.stop(t + len * 0.9);
+
+          t += len + 0.03;
         });
       } catch (e) {
-        // audio policy or muted
+        // audio policy
       }
     }
 

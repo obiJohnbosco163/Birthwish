@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { BirthwishLogo } from './BirthwishLogo';
 import { ThemeToggle } from './ThemeToggle';
-import { Sparkles, PlusCircle, LogOut, ShieldCheck, Home, LayoutDashboard } from 'lucide-react';
+import { Sparkles, PlusCircle, LogOut, ShieldCheck, Home, LayoutDashboard, ChevronDown, User, Heart } from 'lucide-react';
 import { UserProfile } from '../types';
 
 interface NavbarProps {
@@ -28,6 +28,19 @@ export const Navbar: React.FC<NavbarProps> = ({
   onToggleTheme,
 }) => {
   const isLight = theme === 'light';
+  const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
+  const profileMenuRef = useRef<HTMLDivElement>(null);
+
+  // Close profile dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (profileMenuRef.current && !profileMenuRef.current.contains(event.target as Node)) {
+        setIsProfileMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   return (
     <header className={`sticky top-0 z-40 w-full border-b backdrop-blur-2xl transition-colors duration-300 ${
@@ -59,7 +72,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               }`}
             >
               <Home className="w-3.5 h-3.5" />
-              <span>Home</span>
+              <span>Home (Public Tributes)</span>
             </button>
             
             <button
@@ -71,7 +84,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               }`}
             >
               <LayoutDashboard className="w-3.5 h-3.5" />
-              <span>Dashboard</span>
+              <span>My Dashboard</span>
             </button>
 
             <button
@@ -102,10 +115,10 @@ export const Navbar: React.FC<NavbarProps> = ({
 
           <div className="hidden lg:flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 text-xs font-semibold">
             <ShieldCheck className="w-3.5 h-3.5" />
-            <span>Kora &amp; Supabase Active</span>
+            <span>Active &amp; Secure</span>
           </div>
 
-          {/* New Tribute button - STRICTLY VISIBLE ONLY WHEN LOGGED IN */}
+          {/* New Tribute button */}
           {user && (
             <button
               onClick={onCreateClick}
@@ -116,36 +129,113 @@ export const Navbar: React.FC<NavbarProps> = ({
             </button>
           )}
 
-          {/* User Account / Explicit Logout Option */}
+          {/* User Account / Profile Dropdown with Logout */}
           {user ? (
-            <div className={`flex items-center gap-2.5 pl-2 border-l ${
-              isLight ? 'border-slate-200' : 'border-white/10'
-            }`}>
-              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-pink-500 to-amber-400 p-0.5 shadow-md">
-                <div className={`w-full h-full rounded-full flex items-center justify-center font-bold text-xs ${
-                  isLight ? 'bg-white text-pink-600' : 'bg-[#0b0f17] text-pink-300'
-                }`}>
-                  {user.name ? user.name.charAt(0).toUpperCase() : user.email.charAt(0).toUpperCase()}
-                </div>
-              </div>
-              <div className="hidden sm:block text-left">
-                <p className={`text-xs font-semibold truncate max-w-[120px] ${
-                  isLight ? 'text-slate-800' : 'text-slate-200'
-                }`}>
-                  {user.name || user.email.split('@')[0]}
-                </p>
-                <p className="text-[10px] text-emerald-500 font-medium">Logged In</p>
-              </div>
-
-              {/* Clear Logout Button */}
+            <div className="relative" ref={profileMenuRef}>
               <button
-                onClick={onSignOut}
-                title="Log out of your account"
-                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 border border-rose-500/20 text-xs font-semibold transition-all cursor-pointer ml-1"
+                type="button"
+                onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
+                className={`flex items-center gap-2 p-1.5 rounded-full border transition-all cursor-pointer ${
+                  isLight 
+                    ? 'hover:bg-slate-100 border-slate-200 bg-white' 
+                    : 'hover:bg-white/10 border-white/10 bg-white/5'
+                }`}
+                title="Click to view profile & log out"
               >
-                <LogOut className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Log out</span>
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-pink-500 to-amber-400 p-0.5 shadow-md">
+                  <div className={`w-full h-full rounded-full flex items-center justify-center font-bold text-xs ${
+                    isLight ? 'bg-white text-pink-600' : 'bg-[#0b0f17] text-pink-300'
+                  }`}>
+                    {user.name ? user.name.charAt(0).toUpperCase() : user.email.charAt(0).toUpperCase()}
+                  </div>
+                </div>
+                <div className="hidden sm:block text-left pr-1">
+                  <p className={`text-xs font-semibold truncate max-w-[100px] leading-tight ${
+                    isLight ? 'text-slate-800' : 'text-slate-200'
+                  }`}>
+                    {user.name || user.email.split('@')[0]}
+                  </p>
+                  <p className="text-[10px] text-pink-500 font-medium leading-none">View Profile</p>
+                </div>
+                <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform ${isProfileMenuOpen ? 'rotate-180' : ''}`} />
               </button>
+
+              {/* Profile Dropdown Menu */}
+              {isProfileMenuOpen && (
+                <div className={`absolute right-0 mt-2 w-64 rounded-2xl border shadow-2xl p-3 z-50 animate-fade-in ${
+                  isLight 
+                    ? 'bg-white border-slate-200 text-slate-900 shadow-slate-300/70' 
+                    : 'bg-[#0f1623] border-white/15 text-white shadow-black/80'
+                }`}>
+                  <div className="flex items-center gap-3 pb-3 border-b border-white/10 px-2">
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-pink-500 to-amber-400 p-0.5">
+                      <div className={`w-full h-full rounded-full flex items-center justify-center font-bold text-sm ${
+                        isLight ? 'bg-white text-pink-600' : 'bg-[#0b0f17] text-pink-300'
+                      }`}>
+                        {user.name ? user.name.charAt(0).toUpperCase() : user.email.charAt(0).toUpperCase()}
+                      </div>
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-bold truncate">{user.name || 'Celebrant Creator'}</p>
+                      <p className="text-xs text-slate-400 truncate">{user.email}</p>
+                    </div>
+                  </div>
+
+                  <div className="py-2 space-y-1">
+                    <button
+                      onClick={() => {
+                        setIsProfileMenuOpen(false);
+                        onDashboardClick();
+                      }}
+                      className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium transition-colors cursor-pointer ${
+                        isLight ? 'hover:bg-slate-100 text-slate-700' : 'hover:bg-white/5 text-slate-300'
+                      }`}
+                    >
+                      <LayoutDashboard className="w-4 h-4 text-pink-500" />
+                      <span>My Personal Dashboard</span>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        setIsProfileMenuOpen(false);
+                        onLandingClick();
+                      }}
+                      className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium transition-colors cursor-pointer ${
+                        isLight ? 'hover:bg-slate-100 text-slate-700' : 'hover:bg-white/5 text-slate-300'
+                      }`}
+                    >
+                      <Home className="w-4 h-4 text-amber-500" />
+                      <span>Home (Community Feed)</span>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        setIsProfileMenuOpen(false);
+                        onCreateClick();
+                      }}
+                      className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium transition-colors cursor-pointer ${
+                        isLight ? 'hover:bg-slate-100 text-slate-700' : 'hover:bg-white/5 text-slate-300'
+                      }`}
+                    >
+                      <PlusCircle className="w-4 h-4 text-emerald-500" />
+                      <span>Create New Birthwish</span>
+                    </button>
+                  </div>
+
+                  <div className="pt-2 border-t border-white/10">
+                    <button
+                      onClick={() => {
+                        setIsProfileMenuOpen(false);
+                        onSignOut();
+                      }}
+                      className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-bold text-rose-500 bg-rose-500/10 hover:bg-rose-500/20 transition-colors cursor-pointer"
+                    >
+                      <LogOut className="w-4 h-4" />
+                      <span>Log Out</span>
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           ) : (
             <div className={`text-xs font-medium ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>

@@ -34,9 +34,78 @@
 }
 
 .light-theme .glass-card {
-  background: rgba(255, 255, 255, 0.88);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  background: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05) !important;
+}
+
+/* =======================================================================
+   WHITE MODE STRICT TEXT & INPUT VISIBILITY FIX
+   User inputs, textareas, selectors MUST be deep solid black (#000000)
+   so every single character typed is 100% visible, crisp, and high-contrast.
+   ======================================================================= */
+.light-theme input:not([type="checkbox"]):not([type="radio"]),
+.light-theme textarea,
+.light-theme select {
+  color: #000000 !important; /* Pure black as requested */
+  background-color: #ffffff !important;
+  border-color: #94a3b8 !important; /* Slate-400 border */
+  caret-color: #ec4899 !important;
+  font-weight: 500 !important;
+}
+
+.light-theme input:focus,
+.light-theme textarea:focus,
+.light-theme select:focus {
+  background-color: #ffffff !important;
+  color: #000000 !important;
+  border-color: #ec4899 !important;
+  box-shadow: 0 0 0 3px rgba(236, 72, 153, 0.15) !important;
+  outline: none !important;
+}
+
+.light-theme input::placeholder,
+.light-theme textarea::placeholder {
+  color: #64748b !important; /* Slate-500 clearly readable placeholder */
+  font-weight: 400 !important;
+}
+
+/* Headings and labels in white mode */
+.light-theme h1:not(.bg-clip-text),
+.light-theme h2:not(.bg-clip-text),
+.light-theme h3:not(.bg-clip-text),
+.light-theme h4:not(.bg-clip-text) {
+  color: #0f172a !important; /* Slate-900 */
+}
+
+.light-theme label {
+  color: #0f172a !important; /* Slate-900 */
+  font-weight: 600 !important;
+}
+
+.light-theme p.text-slate-400,
+.light-theme span.text-slate-400 {
+  color: #475569 !important; /* Slate-600 */
+}
+
+.light-theme p.text-slate-300,
+.light-theme span.text-slate-300 {
+  color: #334155 !important; /* Slate-700 */
+}
+
+.light-theme p.text-slate-200 {
+  color: #1e293b !important;
+}
+
+.light-theme div[class*="border-white/10"],
+.light-theme div[class*="border-white/15"],
+.light-theme div[class*="border-white/5"] {
+  border-color: #cbd5e1 !important;
+}
+
+.light-theme div[class*="bg-white/5"],
+.light-theme div[class*="bg-white/[0.02]"] {
+  background-color: #f8fafc !important;
 }
 
 @keyframes fadeIn {

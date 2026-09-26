@@ -4,6 +4,8 @@ import { RAINBOW_COLORS } from '../lib/colors';
 import { POPULAR_BANKS, claimFundsFromHolding, resolveBankAccount } from '../lib/kora';
 import { updateWishClaim } from '../lib/supabase';
 import { generateStandaloneBirthwishHtml } from '../lib/htmlExporter';
+import { happyBirthdayAudio } from '../lib/happyBirthdayAudio';
+import { CelebrantCakeBlow } from './CelebrantCakeBlow';
 import { BirthwishLogo } from './BirthwishLogo';
 import confetti from 'canvas-confetti';
 import { 
@@ -63,31 +65,19 @@ export const CelebrantView: React.FC<CelebrantViewProps> = ({
 
   const theme = RAINBOW_COLORS[wish.colorTheme] || RAINBOW_COLORS.pink;
 
-  // Web Audio Birthday Chime
-  const playBirthdayChime = () => {
-    try {
-      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
-      if (!AudioCtx) return;
-      const ctx = new AudioCtx();
-      const notes = [523.25, 659.25, 783.99, 1046.50, 1318.51];
-      notes.forEach((freq, idx) => {
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(freq, ctx.currentTime + idx * 0.14);
-        gain.gain.setValueAtTime(0.18, ctx.currentTime + idx * 0.14);
-        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + idx * 0.14 + 0.7);
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.start(ctx.currentTime + idx * 0.14);
-        osc.stop(ctx.currentTime + idx * 0.14 + 0.7);
-      });
-      setIsPlayingSound(true);
-      setTimeout(() => setIsPlayingSound(false), 1200);
-    } catch {
-      // Audio policy
-    }
+  // Authentic Happy Birthday Song Player
+  const toggleBirthdayMusic = () => {
+    happyBirthdayAudio.toggleSong((playing) => {
+      setIsPlayingSound(playing);
+    });
   };
+
+  // Cleanup music on exit
+  React.useEffect(() => {
+    return () => {
+      happyBirthdayAudio.stop();
+    };
+  }, []);
 
   const triggerConfetti = () => {
     confetti({
@@ -101,7 +91,6 @@ export const CelebrantView: React.FC<CelebrantViewProps> = ({
   const goToStage = (target: number) => {
     setStage(target);
     triggerConfetti();
-    playBirthdayChime();
   };
 
   // Resolve bank account on 10 digits
@@ -210,7 +199,7 @@ export const CelebrantView: React.FC<CelebrantViewProps> = ({
         origin: { y: 0.5 },
         colors: ['#10b981', '#34d399', '#fde047', '#f43f5e'],
       });
-      playBirthdayChime();
+      happyBirthdayAudio.playHappyBirthdayMelody();
     } catch (err: any) {
       setClaimError(err.message || 'Verification failed. Please check your passcode and bank details and try again.');
     } finally {
@@ -309,8 +298,8 @@ export const CelebrantView: React.FC<CelebrantViewProps> = ({
           )}
 
           <button
-            onClick={playBirthdayChime}
-            title="Play celebration chime"
+            onClick={toggleBirthdayMusic}
+            title={isPlayingSound ? 'Mute Happy Birthday song' : 'Play Happy Birthday song'}
             className="p-2 rounded-full bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white border border-white/10 transition-all cursor-pointer"
           >
             {isPlayingSound ? (
@@ -493,6 +482,15 @@ export const CelebrantView: React.FC<CelebrantViewProps> = ({
               Sent with love by: {wish.senderRelation}
             </span>
           </div>
+
+          {/* Chapter 3 Interactive Birthday Cake for Blowing Out Candles & Repeating Birthday Song */}
+          <CelebrantCakeBlow
+            celebrantName={wish.celebrantNickname || wish.celebrantName}
+            themePrimaryColor={theme.primary}
+            onCandleBlown={() => {
+              setIsPlayingSound(true);
+            }}
+          />
 
           <div className="flex items-center justify-between pt-6 border-t border-white/10">
             <button
