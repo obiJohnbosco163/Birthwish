@@ -5,6 +5,7 @@ import { Dashboard } from './components/Dashboard';
 import { CreateWishWizard } from './components/CreateWishWizard';
 import { CelebrantView } from './components/CelebrantView';
 import { UserOnboardingModal } from './components/UserOnboardingModal';
+import { OAuthConsent } from './components/OAuthConsent';
 import { Birthwish, UserProfile } from './types';
 import { getStoredWishes, getStoredUser, setStoredUser, signOutUser, supabase } from './lib/supabase';
 
@@ -20,7 +21,7 @@ export default function App() {
   });
 
   const [user, setUser] = useState<UserProfile | null>(() => getStoredUser());
-  const [currentView, setCurrentView] = useState<'landing' | 'dashboard' | 'create' | 'view'>('landing');
+  const [currentView, setCurrentView] = useState<'landing' | 'dashboard' | 'create' | 'view' | 'oauth_consent'>('landing');
   const [wishes, setWishes] = useState<Birthwish[]>([]);
   const [activeWish, setActiveWish] = useState<Birthwish | null>(null);
 
@@ -77,9 +78,18 @@ export default function App() {
       }
     });
 
-    // Check hash for direct wish view (e.g., #wish-123)
-    const handleHashChange = () => {
-      const hash = window.location.hash;
+    // Check pathname or hash for OAuth Consent or direct wish view
+    const handleLocationChange = () => {
+      const pathname = window.location.pathname.toLowerCase();
+      const hash = window.location.hash.toLowerCase();
+
+      // Detect /oauth/consent (Supabase OAuth Server Authorization Path)
+      if (pathname.includes('/oauth/consent') || hash.includes('/oauth/consent') || hash.startsWith('#oauth/consent')) {
+        setCurrentView('oauth_consent');
+        return;
+      }
+
+      // Check hash for direct wish view (e.g., #wish-123)
       if (hash.startsWith('#wish-')) {
         const wishId = hash.replace('#wish-', '');
         const found = loaded.find((w) => w.id === wishId);
@@ -90,14 +100,18 @@ export default function App() {
       }
     };
 
-    handleHashChange();
-    window.addEventListener('hashchange', handleHashChange);
-    return () => window.removeEventListener('hashchange', handleHashChange);
+    handleLocationChange();
+    window.addEventListener('hashchange', handleLocationChange);
+    window.addEventListener('popstate', handleLocationChange);
+    return () => {
+      window.removeEventListener('hashchange', handleLocationChange);
+      window.removeEventListener('popstate', handleLocationChange);
+    };
   }, []);
 
-  // Strict Facebook pattern: If logged out, only landing or direct celebrant view can render
+  // Strict pattern: If logged out, only landing, oauth_consent, or direct celebrant view can render
   useEffect(() => {
-    if (!user && currentView !== 'landing' && currentView !== 'view') {
+    if (!user && currentView !== 'landing' && currentView !== 'view' && currentView !== 'oauth_consent') {
       setCurrentView('landing');
     }
   }, [user, currentView]);
@@ -186,18 +200,18 @@ export default function App() {
         : 'bg-[#080c14] text-slate-100 selection:bg-pink-500 selection:text-white'
     }`}>
       {/* 
-        FACEBOOK ARCHITECTURE:
-        Navbar with Home, Dashboard, Create, New Tribute, and User Profile ONLY renders when user is logged in AND on an authenticated view.
-        When logged out, there is ZERO app menu navigation bar.
+        AUTHENTICATED APPLICATION ARCHITECTURE:
+        Navbar renders when user is logged in (featuring Dashboard, Create Birthwish, New Tribute, Theme toggle, and Profile/Sign Out).
+        When user logs in, they are immediately in their private atelier (Dashboard/Create/View).
+        There is NO "Home" tab or button for logged-in users.
       */}
-      {user && currentView !== 'landing' && (
+      {user && currentView !== 'oauth_consent' && (
         <Navbar
           user={user}
           onOpenAuth={() => {}}
           onSignOut={handleSignOut}
           onCreateClick={handleCreateClick}
           onDashboardClick={handleDashboardClick}
-          onLandingClick={handleLandingClick}
           currentView={currentView}
           theme={theme}
           onToggleTheme={toggleTheme}
@@ -206,12 +220,24 @@ export default function App() {
 
       {/* Main Content Area */}
       <main className="flex-1">
-        {(!user || currentView === 'landing') && (
+        {currentView === 'oauth_consent' && (
+          <OAuthConsent
+            user={user}
+            theme={theme}
+            onToggleTheme={toggleTheme}
+            onConsentFinished={() => {
+              if (user) {
+                setCurrentView('dashboard');
+              } else {
+                setCurrentView('landing');
+              }
+            }}
+          />
+        )}
+
+        {currentView !== 'oauth_consent' && !user && (
           <LandingPage
             user={user}
-            wishes={wishes}
-            onViewWish={handlePreviewWish}
-            onCreateClick={handleCreateClick}
             onLoginSuccess={handleLoginSuccess}
             onOpenDashboard={handleDashboardClick}
             onSignOut={handleSignOut}
@@ -220,7 +246,7 @@ export default function App() {
           />
         )}
 
-        {user && currentView === 'dashboard' && (
+        {currentView !== 'oauth_consent' && user && currentView === 'dashboard' && (
           <Dashboard
             user={user}
             wishes={wishes}
@@ -231,7 +257,7 @@ export default function App() {
           />
         )}
 
-        {user && currentView === 'create' && (
+        {currentView !== 'oauth_consent' && user && currentView === 'create' && (
           <CreateWishWizard
             user={user}
             onWishCreated={handleWishCreated}
@@ -240,7 +266,7 @@ export default function App() {
           />
         )}
 
-        {currentView === 'view' && activeWish && (
+        {currentView !== 'oauth_consent' && currentView === 'view' && activeWish && (
           <CelebrantView
             wish={activeWish}
             onBackToDashboard={user ? handleDashboardClick : handleLandingClick}

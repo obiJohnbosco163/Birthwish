@@ -10,7 +10,7 @@ interface BirthwishLogoProps {
 export const BirthwishLogo: React.FC<BirthwishLogoProps> = ({
   size = 'md',
   showText = false,
-  textClassName = 'text-white',
+  textClassName = '',
   className = '',
 }) => {
   const pixelMap = {
@@ -149,14 +149,14 @@ export const BirthwishLogo: React.FC<BirthwishLogoProps> = ({
       {showText && (
         <div className="flex flex-col">
           <div className="flex items-center gap-2">
-            <span className={`font-signature text-3xl sm:text-4xl text-transparent bg-clip-text bg-gradient-to-r from-pink-400 via-rose-300 to-amber-200 tracking-wide font-normal ${textClassName}`}>
+            <span className={`font-signature text-3xl sm:text-4xl tracking-wide font-bold bg-clip-text text-transparent bg-gradient-to-r from-pink-600 via-rose-500 to-amber-500 drop-shadow-[0_1px_2px_rgba(244,63,94,0.18)] ${textClassName}`}>
               Birthwish
             </span>
-            <span className="text-[10px] tracking-widest uppercase px-2 py-0.5 rounded-full bg-pink-500/10 text-pink-400 border border-pink-500/25 font-semibold">
+            <span className="text-[10px] tracking-widest uppercase px-2.5 py-0.5 rounded-full bg-pink-500/15 text-pink-600 dark:text-pink-400 border border-pink-500/30 font-bold shadow-sm">
               Atelier
             </span>
           </div>
-          <span className="text-[11px] text-slate-400 tracking-wide font-medium font-editorial">
+          <span className="text-[11px] text-slate-600 dark:text-slate-400 tracking-wide font-medium font-editorial">
             Celebrate the ones you love
           </span>
         </div>

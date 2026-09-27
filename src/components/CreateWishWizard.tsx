@@ -945,16 +945,17 @@ export const CreateWishWizard: React.FC<CreateWishWizardProps> = ({
             <button
               type="button"
               onClick={() => onPreviewWish(createdWish)}
-              className="w-full sm:w-auto px-6 py-3 rounded-full bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white font-bold text-sm shadow-lg shadow-pink-500/25 flex items-center justify-center gap-2 cursor-pointer transition-all hover:scale-105"
+              className="w-full sm:w-auto px-7 py-3.5 rounded-full bg-gradient-to-r from-pink-500 via-rose-500 to-amber-500 hover:from-pink-600 hover:to-amber-600 text-white font-bold text-sm shadow-xl shadow-pink-500/30 flex items-center justify-center gap-2.5 cursor-pointer transition-all hover:scale-105 active:scale-95"
             >
+              <Sparkles className="w-4 h-4 text-yellow-200" />
+              <span>🎂 Happy Birthday! Enter Dream World (View Result)</span>
               <Eye className="w-4 h-4" />
-              <span>Experience Celebrant Journey</span>
             </button>
 
             <button
               type="button"
               onClick={handleDownloadHtml}
-              className="w-full sm:w-auto px-6 py-3 rounded-full bg-white/10 hover:bg-white/15 border border-white/20 text-white font-semibold text-sm flex items-center justify-center gap-2 cursor-pointer transition-all hover:scale-105"
+              className="w-full sm:w-auto px-6 py-3.5 rounded-full bg-white/10 hover:bg-white/15 border border-white/20 text-white font-semibold text-sm flex items-center justify-center gap-2 cursor-pointer transition-all hover:scale-105"
             >
               <Download className="w-4 h-4 text-yellow-300" />
               <span>Download Standalone (.html) File</span>

@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { BirthwishLogo } from './BirthwishLogo';
 import { ThemeToggle } from './ThemeToggle';
-import { Sparkles, PlusCircle, LogOut, ShieldCheck, Home, LayoutDashboard, ChevronDown, User, Heart } from 'lucide-react';
+import { Sparkles, PlusCircle, LogOut, ShieldCheck, LayoutDashboard, ChevronDown } from 'lucide-react';
 import { UserProfile } from '../types';
 
 interface NavbarProps {
@@ -10,7 +10,7 @@ interface NavbarProps {
   onSignOut: () => void;
   onCreateClick: () => void;
   onDashboardClick: () => void;
-  onLandingClick: () => void;
+  onLandingClick?: () => void;
   currentView: 'landing' | 'dashboard' | 'create' | 'view';
   theme: 'dark' | 'light';
   onToggleTheme: () => void;
@@ -58,23 +58,11 @@ export const Navbar: React.FC<NavbarProps> = ({
           <BirthwishLogo size="md" showText={true} />
         </button>
 
-        {/* Center Navigation Links - STRICTLY VISIBLE ONLY WHEN LOGGED IN */}
+        {/* Center Navigation Links - STRICTLY VISIBLE ONLY WHEN LOGGED IN (Dashboard & Create only, No Home tab) */}
         {user ? (
           <nav className={`hidden md:flex items-center gap-1 p-1.5 rounded-full border shadow-inner animate-fade-in ${
             isLight ? 'bg-slate-100 border-slate-200' : 'bg-white/[0.04] border-white/10'
           }`}>
-            <button
-              onClick={onLandingClick}
-              className={`px-4 py-2 rounded-full text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
-                currentView === 'landing'
-                  ? isLight ? 'bg-white text-slate-900 shadow-sm' : 'bg-white/15 text-white shadow-sm'
-                  : isLight ? 'text-slate-600 hover:text-slate-900 hover:bg-white/50' : 'text-slate-400 hover:text-white hover:bg-white/5'
-              }`}
-            >
-              <Home className="w-3.5 h-3.5" />
-              <span>Home (Public Tributes)</span>
-            </button>
-            
             <button
               onClick={onDashboardClick}
               className={`px-4 py-2 rounded-full text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
@@ -84,7 +72,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               }`}
             >
               <LayoutDashboard className="w-3.5 h-3.5" />
-              <span>My Dashboard</span>
+              <span>Dashboard</span>
             </button>
 
             <button
@@ -150,12 +138,12 @@ export const Navbar: React.FC<NavbarProps> = ({
                   </div>
                 </div>
                 <div className="hidden sm:block text-left pr-1">
-                  <p className={`text-xs font-semibold truncate max-w-[100px] leading-tight ${
-                    isLight ? 'text-slate-800' : 'text-slate-200'
+                  <p className={`text-xs font-bold truncate max-w-[140px] leading-tight ${
+                    isLight ? 'text-slate-900' : 'text-slate-100'
                   }`}>
                     {user.name || user.email.split('@')[0]}
                   </p>
-                  <p className="text-[10px] text-pink-500 font-medium leading-none">View Profile</p>
+                  <p className="text-[10px] text-pink-600 dark:text-pink-400 font-semibold leading-none">View Profile</p>
                 </div>
                 <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform ${isProfileMenuOpen ? 'rotate-180' : ''}`} />
               </button>
@@ -192,20 +180,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                       }`}
                     >
                       <LayoutDashboard className="w-4 h-4 text-pink-500" />
-                      <span>My Personal Dashboard</span>
-                    </button>
-
-                    <button
-                      onClick={() => {
-                        setIsProfileMenuOpen(false);
-                        onLandingClick();
-                      }}
-                      className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium transition-colors cursor-pointer ${
-                        isLight ? 'hover:bg-slate-100 text-slate-700' : 'hover:bg-white/5 text-slate-300'
-                      }`}
-                    >
-                      <Home className="w-4 h-4 text-amber-500" />
-                      <span>Home (Community Feed)</span>
+                      <span>Dashboard</span>
                     </button>
 
                     <button
@@ -218,7 +193,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                       }`}
                     >
                       <PlusCircle className="w-4 h-4 text-emerald-500" />
-                      <span>Create New Birthwish</span>
+                      <span>Create Birthwish</span>
                     </button>
                   </div>
 

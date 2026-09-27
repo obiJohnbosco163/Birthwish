@@ -3,7 +3,6 @@ import { BirthwishLogo } from './BirthwishLogo';
 import { Interactive3DCake } from './Interactive3DCake';
 import { ThemeToggle } from './ThemeToggle';
 import { UserProfile, Birthwish } from '../types';
-import { RAINBOW_COLORS } from '../lib/colors';
 import { signInWithEmail, signUpWithEmail, signInWithGoogle, signInWithGitHub } from '../lib/supabase';
 import { 
   ShieldCheck, 
@@ -18,10 +17,7 @@ import {
   AlertCircle, 
   CheckCircle2,
   LogOut,
-  ArrowRight,
-  Compass,
-  Gift,
-  Eye
+  ArrowRight
 } from 'lucide-react';
 
 interface LandingPageProps {
@@ -38,9 +34,6 @@ interface LandingPageProps {
 
 export const LandingPage: React.FC<LandingPageProps> = ({
   user,
-  wishes = [],
-  onViewWish,
-  onCreateClick,
   onLoginSuccess,
   onOpenDashboard,
   onSignOut,
@@ -447,142 +440,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         </div>
       </div>
 
-      {/* ================= COMMUNITY TRIBUTES EXPLORE SECTION (HOME FEED) ================= */}
-      <section className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 border-t border-white/10 mt-12">
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
-          <div>
-            <div className="flex items-center gap-2 mb-2">
-              <span className="p-1.5 rounded-lg bg-pink-500/10 text-pink-500">
-                <Compass className="w-4 h-4" />
-              </span>
-              <span className="text-xs font-bold uppercase tracking-widest text-pink-500">
-                Global Sanctuary Feed
-              </span>
-            </div>
-            <h2 className={`font-haute text-3xl sm:text-4xl font-extrabold ${isLight ? 'text-slate-900' : 'text-white'}`}>
-              Explore Celebrant Tributes
-            </h2>
-            <p className={`text-sm mt-1 max-w-xl ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
-              Browse the heartfelt tributes and birthday epistles created by members of our community worldwide.
-            </p>
-          </div>
-
-          {onCreateClick && (
-            <button
-              onClick={onCreateClick}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white font-bold text-xs shadow-lg shadow-pink-500/25 transition-all hover:scale-105 active:scale-95 cursor-pointer self-start md:self-auto"
-            >
-              <PlusCircle className="w-4 h-4" />
-              <span>Create Your Tribute</span>
-            </button>
-          )}
-        </div>
-
-        {wishes.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {wishes.map((wish) => {
-              const themeConfig = RAINBOW_COLORS[wish.colorTheme] || RAINBOW_COLORS.pink;
-              return (
-                <div
-                  key={wish.id}
-                  onClick={() => onViewWish && onViewWish(wish)}
-                  className={`group rounded-3xl border overflow-hidden transition-all duration-300 hover:shadow-2xl hover:-translate-y-1.5 cursor-pointer ${
-                    isLight 
-                      ? 'bg-white border-slate-200 hover:border-pink-300 shadow-sm' 
-                      : 'bg-[#101726] border-white/10 hover:border-pink-500/40 shadow-black'
-                  }`}
-                >
-                  {/* Card Cover Header with Photo */}
-                  <div className="relative h-44 w-full overflow-hidden bg-slate-900">
-                    <img
-                      src={wish.coverImage}
-                      alt={wish.celebrantName}
-                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-                    
-                    {/* Badge */}
-                    <div className="absolute top-3 left-3 flex gap-2">
-                      <span 
-                        className="px-3 py-1 rounded-full text-[11px] font-bold tracking-wide shadow-md"
-                        style={{ backgroundColor: themeConfig.primary, color: '#ffffff' }}
-                      >
-                        {wish.category}
-                      </span>
-                      {wish.hasGift && (
-                        <span className="px-2.5 py-1 rounded-full bg-emerald-500/90 text-white text-[11px] font-bold flex items-center gap-1 shadow-md">
-                          <Gift className="w-3 h-3" />
-                          <span>₦{wish.giftAmount?.toLocaleString()}</span>
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Celebrant Main Avatar Thumbnail */}
-                    <div className="absolute -bottom-4 right-4 w-14 h-14 rounded-full p-1 bg-white shadow-xl">
-                      <img
-                        src={wish.mainImage}
-                        alt={wish.celebrantName}
-                        className="w-full h-full object-cover rounded-full"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Card Content */}
-                  <div className="p-5 pt-4">
-                    <h3 className={`font-display text-lg font-bold truncate group-hover:text-pink-500 transition-colors ${
-                      isLight ? 'text-slate-900' : 'text-white'
-                    }`}>
-                      {wish.celebrantName}
-                    </h3>
-                    {wish.celebrantNickname && (
-                      <p className="text-xs font-semibold text-pink-500 truncate -mt-0.5">
-                        &quot;{wish.celebrantNickname}&quot;
-                      </p>
-                    )}
-
-                    <p className={`text-xs line-clamp-2 my-2.5 italic leading-relaxed ${
-                      isLight ? 'text-slate-600' : 'text-slate-300'
-                    }`}>
-                      &ldquo;{wish.shortMessage}&rdquo;
-                    </p>
-
-                    <div className={`pt-3 border-t flex items-center justify-between text-xs ${
-                      isLight ? 'border-slate-100 text-slate-500' : 'border-white/10 text-slate-400'
-                    }`}>
-                      <span>Sent with love by <b>{wish.senderRelation}</b></span>
-                      <span className="inline-flex items-center gap-1 font-semibold text-pink-500 group-hover:translate-x-1 transition-transform">
-                        <span>View</span>
-                        <Eye className="w-3.5 h-3.5" />
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        ) : (
-          <div className={`p-12 text-center rounded-3xl border ${
-            isLight ? 'bg-white border-slate-200' : 'bg-white/5 border-white/10'
-          }`}>
-            <Sparkles className="w-8 h-8 text-pink-500 mx-auto mb-3" />
-            <h3 className={`font-bold text-base ${isLight ? 'text-slate-800' : 'text-white'}`}>
-              Be the First to Celebrate Someone Special!
-            </h3>
-            <p className={`text-xs max-w-sm mx-auto mt-1 ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
-              Create a bespoke birthday tribute with custom colors, photo chapters, emotional epistles, and cash gifts.
-            </p>
-            {onCreateClick && (
-              <button
-                onClick={onCreateClick}
-                className="mt-4 px-6 py-2.5 rounded-full bg-pink-500 hover:bg-pink-600 text-white font-bold text-xs shadow-md shadow-pink-500/25 transition-all cursor-pointer"
-              >
-                Create First Birthwish
-              </button>
-            )}
-          </div>
-        )}
-      </section>
-
       {/* ================= FULLY VISIBLE & RESPONSIVE SIGN UP MODAL (NEVER CUT OFF) ================= */}
       {isSignUpModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/75 backdrop-blur-md animate-fade-in overflow-y-auto">
@@ -819,6 +676,16 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               <span>Log In</span>
               <span>Kora Pay Holding</span>
               <span>Supabase Cloud</span>
+              <a 
+                href="#oauth/consent" 
+                onClick={(e) => {
+                  e.preventDefault();
+                  window.location.hash = 'oauth/consent';
+                }}
+                className="hover:underline cursor-pointer text-pink-600 dark:text-pink-400 font-semibold"
+              >
+                OAuth 2.1 Server
+              </a>
               <span>GDG Owerri Hackathon 2026</span>
               <span>Privacy</span>
               <span>Terms</span>

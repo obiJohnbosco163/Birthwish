@@ -385,14 +385,14 @@ export const CelebrantView: React.FC<CelebrantViewProps> = ({
           </div>
 
           <span className="px-3.5 py-1 rounded-full bg-pink-500/15 text-pink-300 text-xs font-semibold uppercase tracking-wider border border-pink-500/30">
-            Exclusive Birthday Surprise
+            ✨ Enter Your Birthday Dream World ✨
           </span>
 
           <h1 className="font-display text-3xl sm:text-4xl font-extrabold text-white mt-3 tracking-tight">
             Happy Birthday, <span className="text-transparent bg-clip-text bg-gradient-to-r from-pink-400 via-rose-300 to-amber-300">{wish.celebrantName}</span>!
           </h1>
           <p className="text-slate-300 text-sm sm:text-base max-w-md mx-auto mt-3 leading-relaxed">
-            Prepared with intense love by <b>{wish.senderName}</b> ({wish.senderRelation}). Step inside to unwrap your special wishes, memories, and surprises!
+            Prepared with intense love by <b>{wish.senderName}</b> ({wish.senderRelation}). Step inside to enter your dream world, unwrap heartfelt wishes, blow out your cake candle, and celebrate!
           </p>
 
           <div className="mt-8">
@@ -401,7 +401,7 @@ export const CelebrantView: React.FC<CelebrantViewProps> = ({
               className="px-8 py-3.5 rounded-full bg-gradient-to-r from-pink-500 via-rose-500 to-amber-500 hover:from-pink-600 hover:to-amber-600 text-white font-bold text-base shadow-xl shadow-pink-500/30 flex items-center gap-2.5 mx-auto transition-all hover:scale-105 active:scale-95 cursor-pointer"
             >
               <Sparkles className="w-5 h-5 text-yellow-200" />
-              <span>Unwrap Birthday Surprise</span>
+              <span>Enter Dream World & Unwrap Surprises</span>
               <ArrowRight className="w-5 h-5" />
             </button>
           </div>

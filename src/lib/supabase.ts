@@ -189,7 +189,7 @@ export const signInWithEmail = async (email: string, password: string): Promise<
     console.warn('Supabase online auth exception:', err);
   }
 
-  // 2. Validate against local registered accounts registry
+  // 2. Validate against registered accounts registry (Only allow accounts registered on Birthwish)
   const accounts = getRegisteredAccounts();
   const matched = accounts.find((a) => a.email.toLowerCase() === cleanEmail);
 
@@ -206,25 +206,8 @@ export const signInWithEmail = async (email: string, password: string): Promise<
     return profile;
   }
 
-  // 3. New valid signin fallback if user account exists or user wants instant demo entry
-  if (cleanEmail && cleanPassword.length >= 6) {
-    const newProfile: UserProfile = {
-      id: `user-${Date.now()}`,
-      email: cleanEmail,
-      name: cleanEmail.split('@')[0],
-    };
-    saveRegisteredAccount({
-      id: newProfile.id,
-      email: cleanEmail,
-      passwordHash: cleanPassword,
-      name: newProfile.name || cleanEmail.split('@')[0],
-      createdAt: new Date().toISOString(),
-    });
-    setStoredUser(newProfile);
-    return newProfile;
-  }
-
-  throw new Error('Account not found or password too short (minimum 6 characters). Please sign up first.');
+  // Strictly block unregistered users as requested: "only login accounts that has signed up or created an account on the app Birthwish"
+  throw new Error('No account found with this email. Please click "Create new account" to sign up on Birthwish first.');
 };
 
 export const signOutUser = async (): Promise<void> => {

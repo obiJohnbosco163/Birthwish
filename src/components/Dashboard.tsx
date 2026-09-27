@@ -17,7 +17,8 @@ import {
   TrendingUp,
   Award,
   Layers,
-  HelpCircle
+  HelpCircle,
+  Compass
 } from 'lucide-react';
 
 interface DashboardProps {
@@ -40,10 +41,16 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const isLight = theme === 'light';
   const [selectedFilter, setSelectedFilter] = useState<string>('All');
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [sanctuaryFilter, setSanctuaryFilter] = useState<string>('All');
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
   // Filter strictly to only birthwishes created by this logged in user
   const userWishes = user ? wishes.filter(w => w.userId === user.id) : [];
+
+  // Filter sanctuary wishes
+  const sanctuaryWishes = wishes.filter((w) => {
+    return sanctuaryFilter === 'All' || w.category === sanctuaryFilter;
+  });
 
   // Compute strictly REAL metrics from wishes actually created by this user
   const totalWishes = userWishes.length;
@@ -404,6 +411,168 @@ export const Dashboard: React.FC<DashboardProps> = ({
           })}
         </div>
       )}
+
+      {/* ================= GLOBAL SANCTUARY FEED SECTION (ONLY VISIBLE AFTER SIGN IN) ================= */}
+      <section className={`pt-10 mt-12 border-t space-y-6 ${isLight ? 'border-slate-200' : 'border-white/10'}`}>
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <span className="p-1.5 rounded-lg bg-pink-500/10 text-pink-500">
+                <Compass className="w-4 h-4" />
+              </span>
+              <span className="text-xs font-bold uppercase tracking-widest text-pink-500">
+                Global Sanctuary Feed
+              </span>
+            </div>
+            <h2 className={`font-haute text-2xl sm:text-3xl font-extrabold ${isLight ? 'text-slate-900' : 'text-white'}`}>
+              Explore Celebrant Tributes Worldwide
+            </h2>
+            <p className={`text-sm mt-1 max-w-xl ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>
+              Browse the heartfelt tributes, prayers, and birthday epistles created by members of our community worldwide.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <span className={`text-xs px-3 py-1 rounded-full border ${
+              isLight ? 'bg-white border-slate-200 text-slate-600' : 'bg-white/5 border-white/10 text-slate-400'
+            }`}>
+              {sanctuaryWishes.length} {sanctuaryWishes.length === 1 ? 'Tribute' : 'Tributes'} in Sanctuary
+            </span>
+          </div>
+        </div>
+
+        {/* Category Pills for Sanctuary */}
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-2 scrollbar-none">
+          {categories.map((cat) => (
+            <button
+              key={cat}
+              onClick={() => setSanctuaryFilter(cat)}
+              className={`px-3.5 py-1.5 rounded-full text-xs font-medium whitespace-nowrap cursor-pointer transition-all ${
+                sanctuaryFilter === cat
+                  ? 'bg-pink-500 text-white shadow-md shadow-pink-500/20 font-semibold'
+                  : isLight
+                    ? 'bg-white hover:bg-slate-100 text-slate-700 border border-slate-200'
+                    : 'bg-white/5 hover:bg-white/10 text-slate-300 border border-white/10'
+              }`}
+            >
+              {cat}
+            </button>
+          ))}
+        </div>
+
+        {/* Global Sanctuary Grid */}
+        {sanctuaryWishes.length === 0 ? (
+          <div className={`p-10 text-center rounded-3xl border ${
+            isLight ? 'bg-white border-slate-200' : 'bg-white/5 border-white/10'
+          }`}>
+            <Sparkles className="w-8 h-8 text-pink-500 mx-auto mb-2" />
+            <h4 className={`font-bold text-sm ${isLight ? 'text-slate-800' : 'text-white'}`}>
+              No Tributes Found in this Category
+            </h4>
+            <p className={`text-xs mt-1 ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
+              Try selecting another category or be the first to create one!
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {sanctuaryWishes.map((wish) => {
+              const themeData = RAINBOW_COLORS[wish.colorTheme] || RAINBOW_COLORS.pink;
+              return (
+                <div
+                  key={`sanctuary-${wish.id}`}
+                  onClick={() => onViewWish(wish)}
+                  className={`group relative rounded-3xl border transition-all duration-300 overflow-hidden shadow-lg hover:shadow-2xl cursor-pointer flex flex-col justify-between ${
+                    isLight 
+                      ? 'bg-white border-slate-200 hover:border-pink-500/50 hover:shadow-pink-500/10' 
+                      : 'bg-[#111827]/70 border-white/10 hover:border-pink-500/50 hover:shadow-pink-500/10'
+                  }`}
+                >
+                  <div>
+                    {/* Card Cover Header with Photo */}
+                    <div className="relative h-44 overflow-hidden">
+                      <img
+                        src={wish.coverImage}
+                        alt="Cover"
+                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+
+                      {/* Category Badge & Color */}
+                      <div className="absolute top-3 left-3 flex items-center gap-2">
+                        <span 
+                          className="px-2.5 py-1 rounded-full text-[11px] font-semibold text-white shadow-md"
+                          style={{ backgroundColor: themeData.primary }}
+                        >
+                          {wish.category}
+                        </span>
+                      </div>
+
+                      {/* Holding Cash Badge */}
+                      {wish.hasGift && (
+                        <div className="absolute top-3 right-3">
+                          <span className="px-2.5 py-1 rounded-full text-[11px] font-bold shadow-md bg-emerald-500/90 text-white flex items-center gap-1">
+                            <Gift className="w-3 h-3" />
+                            <span>₦{wish.giftAmount?.toLocaleString()}</span>
+                          </span>
+                        </div>
+                      )}
+
+                      {/* Celebrant Avatar Overlay */}
+                      <div className="absolute -bottom-4 left-6">
+                        <div className="w-14 h-14 rounded-full border-2 border-white overflow-hidden shadow-lg bg-black">
+                          <img
+                            src={wish.mainImage}
+                            alt={wish.celebrantName}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Body Content */}
+                    <div className="p-6 pt-7 space-y-3">
+                      <div>
+                        <h4 className={`font-display text-lg font-bold group-hover:text-pink-500 transition-colors ${
+                          isLight ? 'text-slate-900' : 'text-white'
+                        }`}>
+                          {wish.celebrantName}
+                        </h4>
+                        {wish.celebrantNickname && (
+                          <p className="text-xs text-pink-500 font-semibold italic">
+                            &ldquo;{wish.celebrantNickname}&rdquo;
+                          </p>
+                        )}
+                        <p className={`text-xs mt-0.5 ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
+                          Sent with love by {wish.senderRelation}
+                        </p>
+                      </div>
+
+                      <p className={`text-xs line-clamp-2 leading-relaxed ${
+                        isLight ? 'text-slate-600' : 'text-slate-300'
+                      }`}>
+                        &ldquo;{wish.shortMessage}&rdquo;
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Card Action Footer */}
+                  <div className={`p-4 border-t flex items-center justify-between text-xs ${
+                    isLight ? 'border-slate-100 bg-slate-50 text-slate-500' : 'border-white/5 bg-black/20 text-slate-400'
+                  }`}>
+                    <span className="text-[11px] font-medium text-slate-400">
+                      Community Tribute
+                    </span>
+                    <span className="text-[11px] font-semibold text-pink-500 group-hover:translate-x-1 transition-transform inline-flex items-center gap-1">
+                      <span>View Tribute</span>
+                      <Eye className="w-3 h-3" />
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </section>
     </div>
   );
 };

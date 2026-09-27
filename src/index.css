@@ -6,6 +6,22 @@
   }
 }
 
+.font-cinzel {
+  font-family: 'Cinzel', serif;
+}
+
+.font-orbitron {
+  font-family: 'Orbitron', sans-serif;
+}
+
+.font-mono-tech {
+  font-family: 'Space Grotesk', -apple-system, sans-serif;
+}
+
+.font-pacifico {
+  font-family: 'Pacifico', cursive;
+}
+
 .font-display {
   font-family: 'Outfit', 'Plus Jakarta Sans', sans-serif;
 }
@@ -85,16 +101,27 @@
 
 .light-theme p.text-slate-400,
 .light-theme span.text-slate-400 {
-  color: #475569 !important; /* Slate-600 */
+  color: #334155 !important; /* Slate-700 for high-contrast readability */
 }
 
 .light-theme p.text-slate-300,
 .light-theme span.text-slate-300 {
-  color: #334155 !important; /* Slate-700 */
+  color: #1e293b !important; /* Slate-800 */
 }
 
-.light-theme p.text-slate-200 {
-  color: #1e293b !important;
+.light-theme p.text-slate-200,
+.light-theme span.text-slate-200 {
+  color: #0f172a !important; /* Slate-900 */
+}
+
+.light-theme p.text-slate-500,
+.light-theme span.text-slate-500 {
+  color: #475569 !important; /* Slate-600 */
+}
+
+/* Ensure font-signature text stands out with rich pink in white mode */
+.light-theme .font-signature.text-transparent {
+  background-image: linear-gradient(to right, #db2777, #e11d48, #d97706) !important;
 }
 
 .light-theme div[class*="border-white/10"],
@@ -104,8 +131,25 @@
 }
 
 .light-theme div[class*="bg-white/5"],
-.light-theme div[class*="bg-white/[0.02]"] {
+.light-theme div[class*="bg-white/[0.02]"],
+.light-theme div[class*="bg-white/[0.03]"] {
   background-color: #f8fafc !important;
+}
+
+/* Ensure text-white on headings or cards in white mode is dark slate */
+.light-theme .glass-card h1.text-white,
+.light-theme .glass-card h2.text-white,
+.light-theme .glass-card h3.text-white,
+.light-theme .glass-card h4.text-white {
+  color: #0f172a !important;
+}
+
+.light-theme button h3.text-white {
+  color: #0f172a !important;
+}
+
+.light-theme .glass-card p.text-slate-400 {
+  color: #334155 !important;
 }
 
 @keyframes fadeIn {
