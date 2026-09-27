@@ -181,20 +181,7 @@ export function generateStandaloneBirthwishHtml(wish: Birthwish): string {
 <body>
   <div class="bg-mesh"></div>
 
-  <!-- ================= 1. FIREWORKS INTRO CANVAS ================= -->
-  <div id="fireworksScreen">
-    <canvas id="fireworksCanvas"></canvas>
-    <div id="enterBtnContainer" style="display: none; text-align: center; z-index: 10;">
-      <button class="cyber-start-btn" onclick="enterDreamWorld()">
-        <span>Enter Your Dream World ✨</span>
-      </button>
-      <p style="font-size: 12px; color: #94a3b8; margin-top: 12px; font-family: 'Space Grotesk', sans-serif;">
-        Click to enter ${safeNickname}'s bespoke celebration sanctuary
-      </p>
-    </div>
-  </div>
-
-  <!-- ================= 2. MAIN HERO CELEBRATION STAGE ================= -->
+  <!-- ================= MAIN HERO CELEBRATION STAGE ================= -->
   <div style="width: 100%; max-width: 1000px; padding: 24px 16px; margin: 0 auto; display: flex; flex-direction: column; align-items: center; min-height: 100vh; justify-content: space-between;">
     
     <!-- Top Bar -->
@@ -398,124 +385,10 @@ export function generateStandaloneBirthwishHtml(wish: Birthwish): string {
     const primaryColor = '${theme.primary}';
     const secondaryColor = '${theme.secondary}';
 
-    // 1. FIREWORKS CANVAS LOGIC
-    (function initFireworks() {
-      const canvas = document.getElementById('fireworksCanvas');
-      if (!canvas) return;
-      const ctx = canvas.getContext('2d');
-      if (!ctx) return;
-
-      let w = canvas.width = window.innerWidth;
-      let h = canvas.height = window.innerHeight;
-      window.addEventListener('resize', () => {
-        w = canvas.width = window.innerWidth;
-        h = canvas.height = window.innerHeight;
-      });
-
-      const rockets = [];
-      const sparks = [];
-      const colors = [primaryColor, secondaryColor, '#ffffff', '#fbbf24', '#38bdf8', '#f43f5e'];
-
-      function launch() {
-        rockets.push({
-          x: Math.random() * (w - 200) + 100,
-          y: h,
-          targetY: h * 0.45 * Math.random() + h * 0.15,
-          vy: -(Math.random() * 4 + 7),
-          color: colors[Math.floor(Math.random() * colors.length)]
-        });
-      }
-
-      function explode(x, y, color) {
-        for (let i = 0; i < 60; i++) {
-          const angle = (Math.PI * 2 / 60) * i + (Math.random() - 0.5) * 0.5;
-          const speed = Math.random() * 5 + 1.5;
-          sparks.push({
-            x, y,
-            vx: Math.cos(angle) * speed,
-            vy: Math.sin(angle) * speed,
-            alpha: 1,
-            color,
-            size: Math.random() * 2.5 + 1,
-            decay: Math.random() * 0.015 + 0.015
-          });
-        }
-      }
-
-      let frame = 0;
-      function loop() {
-        ctx.fillStyle = 'rgba(4, 7, 20, 0.22)';
-        ctx.fillRect(0, 0, w, h);
-        frame++;
-        if (frame % 25 === 0 && frame < 350) launch();
-
-        for (let i = rockets.length - 1; i >= 0; i--) {
-          const r = rockets[i];
-          r.y += r.vy;
-          ctx.beginPath();
-          ctx.arc(r.x, r.y, 2.5, 0, Math.PI * 2);
-          ctx.fillStyle = r.color;
-          ctx.shadowColor = r.color;
-          ctx.shadowBlur = 10;
-          ctx.fill();
-          ctx.shadowBlur = 0;
-          if (r.y <= r.targetY) {
-            explode(r.x, r.y, r.color);
-            rockets.splice(i, 1);
-          }
-        }
-
-        for (let i = sparks.length - 1; i >= 0; i--) {
-          const s = sparks[i];
-          s.x += s.vx;
-          s.y += s.vy;
-          s.vy += 0.05;
-          s.alpha -= s.decay;
-          if (s.alpha <= 0) {
-            sparks.splice(i, 1);
-          } else {
-            ctx.beginPath();
-            ctx.arc(s.x, s.y, s.size, 0, Math.PI * 2);
-            ctx.fillStyle = s.color;
-            ctx.globalAlpha = Math.max(0, s.alpha);
-            ctx.fill();
-            ctx.globalAlpha = 1;
-          }
-        }
-
-        ctx.font = 'bold 24px "Orbitron", sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillStyle = primaryColor;
-        ctx.shadowColor = primaryColor;
-        ctx.shadowBlur = 15;
-        const upper = (wishData.celebrantNickname || wishData.celebrantName).toUpperCase();
-        if (w > 640) {
-          ctx.fillText('HAPPY BIRTHDAY ' + upper, w / 2, h * 0.35);
-        } else {
-          ctx.fillText('HAPPY BIRTHDAY', w / 2, h * 0.32);
-          ctx.fillText(upper, w / 2, h * 0.38);
-        }
-        ctx.shadowBlur = 0;
-
-        requestAnimationFrame(loop);
-      }
-      loop();
-
-      setTimeout(() => {
-        const btn = document.getElementById('enterBtnContainer');
-        if (btn) btn.style.display = 'block';
-      }, 2000);
-    })();
-
-    function enterDreamWorld() {
-      const screen = document.getElementById('fireworksScreen');
-      if (screen) {
-        screen.style.opacity = '0';
-        setTimeout(() => screen.style.display = 'none', 600);
-      }
+    // Auto celebratory confetti burst on load
+    window.addEventListener('load', () => {
       fireBurst();
-      playSong();
-    }
+    });
 
     // 2. TICKER TYPEWRITER
     (function initTicker() {

@@ -10,6 +10,7 @@ import { RAINBOW_COLORS } from '../lib/colors';
 import { initializeKoraHoldingPayment, KORA_CONFIG } from '../lib/kora';
 import { saveWish } from '../lib/supabase';
 import { generateStandaloneBirthwishHtml } from '../lib/htmlExporter';
+import { generateShareableWishLink } from '../lib/wishEncoder';
 import confetti from 'canvas-confetti';
 import { 
   Sparkles, 
@@ -28,7 +29,9 @@ import {
   CheckCircle2, 
   DollarSign, 
   AlertTriangle,
-  Gift
+  Gift,
+  Copy,
+  ExternalLink
 } from 'lucide-react';
 
 interface CreateWishWizardProps {
@@ -101,6 +104,7 @@ export const CreateWishWizard: React.FC<CreateWishWizardProps> = ({
   // Created Wish
   const [createdWish, setCreatedWish] = useState<Birthwish | null>(null);
   const [errorNotice, setErrorNotice] = useState<string | null>(null);
+  const [copiedLink, setCopiedLink] = useState<boolean>(false);
 
   // File to base64 helper
   const handleImageFile = (e: React.ChangeEvent<HTMLInputElement>, target: 'cover' | 'main') => {
@@ -246,6 +250,14 @@ export const CreateWishWizard: React.FC<CreateWishWizardProps> = ({
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+  };
+
+  const handleCopyShareLink = () => {
+    if (!createdWish) return;
+    const shareableUrl = generateShareableWishLink(createdWish);
+    navigator.clipboard.writeText(shareableUrl);
+    setCopiedLink(true);
+    setTimeout(() => setCopiedLink(false), 3000);
   };
 
   return (
@@ -603,7 +615,7 @@ export const CreateWishWizard: React.FC<CreateWishWizardProps> = ({
           <div>
             <div className="flex justify-between items-center mb-1.5">
               <label className="block text-xs font-semibold text-slate-300">
-                Short/Brief Message, Wish, or Prayer (For Surprise Flash) <span className="text-rose-400">*</span>
+                Brief Surprise Message (Animates in typewriter on the &quot;Let&apos;s Celebrate&quot; modal) <span className="text-rose-400">*</span>
               </label>
               <button
                 type="button"
@@ -622,16 +634,19 @@ export const CreateWishWizard: React.FC<CreateWishWizardProps> = ({
               rows={2}
               value={shortMessage}
               onChange={(e) => setShortMessage(e.target.value)}
-              placeholder="e.g. May heavens shower you with favor and make all your quiet prayers loud testimonies this new year!"
+              placeholder="Type your brief wish for the celebrant here. It will be revealed letter-by-letter with typewriter animation when the celebrant taps 'Let's Celebrate'!"
               className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:border-pink-500 transition-colors"
             />
+            <p className="text-[11px] text-slate-400 mt-1">
+              ✨ <i>Animated in the pop-up modal like https://happy-birthdaysir-kevin.vercel.app/</i>
+            </p>
           </div>
 
           {/* Section 4: Final Message - Long Emotional Epistle */}
           <div>
             <div className="flex justify-between items-center mb-1.5">
               <label className="block text-xs font-semibold text-slate-300">
-                Final Message: Heartfelt Epistle That Brings Tears of Joy <span className="text-rose-400">*</span>
+                Final Message: Heartfelt Epistle (Displayed on final celebration page after blowing candles) <span className="text-rose-400">*</span>
               </label>
               <button
                 type="button"
@@ -910,8 +925,59 @@ export const CreateWishWizard: React.FC<CreateWishWizardProps> = ({
             )}
           </p>
 
+          {/* Sharable Viewing Link Showcase Box */}
+          <div className="my-8 max-w-xl mx-auto p-5 rounded-2xl bg-gradient-to-r from-pink-500/10 via-amber-500/10 to-rose-500/10 border border-pink-500/30 text-left space-y-3 shadow-lg">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="p-1.5 rounded-lg bg-pink-500/20 text-pink-400">
+                  <Share2 className="w-4 h-4" />
+                </span>
+                <span className="font-bold text-xs uppercase tracking-wider text-pink-400 font-mono-tech">
+                  Celebrant Viewing Link
+                </span>
+              </div>
+              <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                Ready to Send
+              </span>
+            </div>
+
+            <p className="text-xs text-slate-300 leading-relaxed">
+              Send this instant viewing link to <b>{createdWish.celebrantName}</b> or post it anywhere. Once they tap or click it, the celebration immediately begins playing from the very beginning with live fireworks, music, typewriter surprise, and your personal epistle without requiring them to sign in!
+            </p>
+
+            <div className="flex items-center gap-2 pt-1">
+              <input
+                type="text"
+                readOnly
+                value={generateShareableWishLink(createdWish)}
+                className="flex-1 bg-black/40 border border-white/15 rounded-xl px-3 py-2 text-xs font-mono text-slate-200 focus:outline-none select-all truncate"
+              />
+              <button
+                type="button"
+                onClick={handleCopyShareLink}
+                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shrink-0 shadow-md ${
+                  copiedLink
+                    ? 'bg-emerald-500 text-white'
+                    : 'bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white hover:scale-105 active:scale-95'
+                }`}
+              >
+                {copiedLink ? (
+                  <>
+                    <CheckCircle2 className="w-4 h-4" />
+                    <span>Link Copied!</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy className="w-4 h-4" />
+                    <span>Copy Link</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+
           {/* Quick Details Card */}
-          <div className="my-8 max-w-md mx-auto p-4 rounded-2xl bg-white/[0.03] border border-white/10 text-left text-xs space-y-2">
+          <div className="mb-8 max-w-md mx-auto p-4 rounded-2xl bg-white/[0.03] border border-white/10 text-left text-xs space-y-2">
             <div className="flex justify-between text-slate-400">
               <span>Celebrant:</span>
               <span className="text-white font-semibold">{createdWish.celebrantName}</span>
@@ -945,11 +1011,19 @@ export const CreateWishWizard: React.FC<CreateWishWizardProps> = ({
             <button
               type="button"
               onClick={() => onPreviewWish(createdWish)}
-              className="w-full sm:w-auto px-7 py-3.5 rounded-full bg-gradient-to-r from-pink-500 via-rose-500 to-amber-500 hover:from-pink-600 hover:to-amber-600 text-white font-bold text-sm shadow-xl shadow-pink-500/30 flex items-center justify-center gap-2.5 cursor-pointer transition-all hover:scale-105 active:scale-95"
+              className="w-full sm:w-auto px-8 py-3.5 rounded-full bg-gradient-to-r from-pink-500 via-rose-500 to-amber-500 hover:from-pink-600 hover:to-amber-600 text-white font-bold text-base shadow-xl shadow-pink-500/30 flex items-center justify-center gap-2.5 cursor-pointer transition-all hover:scale-105"
             >
-              <Sparkles className="w-4 h-4 text-yellow-200" />
-              <span>🎂 Happy Birthday! Enter Dream World (View Result)</span>
-              <Eye className="w-4 h-4" />
+              <Eye className="w-5 h-5 text-yellow-200" />
+              <span>Launch Celebration Preview ✨</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleCopyShareLink}
+              className="w-full sm:w-auto px-6 py-3.5 rounded-full bg-pink-500/20 hover:bg-pink-500/30 border border-pink-500/40 text-pink-300 font-bold text-sm flex items-center justify-center gap-2 cursor-pointer transition-all hover:scale-105"
+            >
+              {copiedLink ? <CheckCircle2 className="w-4 h-4 text-emerald-400" /> : <Share2 className="w-4 h-4" />}
+              <span>{copiedLink ? 'Link Copied to Clipboard!' : 'Copy Shareable Link'}</span>
             </button>
 
             <button
@@ -958,12 +1032,12 @@ export const CreateWishWizard: React.FC<CreateWishWizardProps> = ({
               className="w-full sm:w-auto px-6 py-3.5 rounded-full bg-white/10 hover:bg-white/15 border border-white/20 text-white font-semibold text-sm flex items-center justify-center gap-2 cursor-pointer transition-all hover:scale-105"
             >
               <Download className="w-4 h-4 text-yellow-300" />
-              <span>Download Standalone (.html) File</span>
+              <span>Download (.html)</span>
             </button>
           </div>
 
-          <p className="text-[11px] text-slate-500 mt-6">
-            💡 The downloaded .html file can be shared directly via WhatsApp, Telegram, or Email. Your celebrant can open it in any browser even offline!
+          <p className="text-[12px] text-slate-400 mt-6 max-w-lg mx-auto">
+            🚀 <b>Experience the Tribute:</b> Launches the celebrant tribute screen with custom theme colors, music toggle, typewriter greetings, the interactive &quot;Let&apos;s Celebrate&quot; surprise, candle-blowing cake, and your personal heartfelt epistle in <b>{createdWish.colorTheme.toUpperCase()}</b> theme!
           </p>
         </div>
       )}

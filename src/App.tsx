@@ -7,7 +7,8 @@ import { CelebrantView } from './components/CelebrantView';
 import { UserOnboardingModal } from './components/UserOnboardingModal';
 import { OAuthConsent } from './components/OAuthConsent';
 import { Birthwish, UserProfile } from './types';
-import { getStoredWishes, getStoredUser, setStoredUser, signOutUser, supabase } from './lib/supabase';
+import { getStoredWishes, getStoredUser, setStoredUser, signOutUser, supabase, saveWish } from './lib/supabase';
+import { decodeShareableWish } from './lib/wishEncoder';
 
 export default function App() {
   // White mode is now the DEFAULT toggle mode
@@ -89,13 +90,34 @@ export default function App() {
         return;
       }
 
-      // Check hash for direct wish view (e.g., #wish-123)
-      if (hash.startsWith('#wish-')) {
-        const wishId = hash.replace('#wish-', '');
-        const found = loaded.find((w) => w.id === wishId);
-        if (found) {
-          setActiveWish(found);
+      // Check hash for shareable viewing link (e.g. #view=... or #wish-...)
+      if (hash.startsWith('#view=') || hash.startsWith('#wish-')) {
+        const { wishId, encodedWish } = decodeShareableWish(window.location.hash);
+        
+        if (encodedWish) {
+          // Immediately display the birthwish created for that particular link from beginning to end
+          saveWish(encodedWish);
+          setWishes(prev => {
+            if (!prev.some(w => w.id === encodedWish.id)) {
+              return [encodedWish, ...prev];
+            }
+            return prev;
+          });
+          setActiveWish(encodedWish);
           setCurrentView('view');
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+          return;
+        }
+
+        if (wishId) {
+          const allWishes = getStoredWishes();
+          const found = allWishes.find((w) => w.id === wishId);
+          if (found) {
+            setActiveWish(found);
+            setCurrentView('view');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            return;
+          }
         }
       }
     };
@@ -271,6 +293,7 @@ export default function App() {
             wish={activeWish}
             onBackToDashboard={user ? handleDashboardClick : handleLandingClick}
             onUpdateWish={handleUpdateWish}
+            isLoggedIn={Boolean(user)}
           />
         )}
       </main>
