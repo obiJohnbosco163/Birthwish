@@ -1037,7 +1037,7 @@ export const CreateWishWizard: React.FC<CreateWishWizardProps> = ({
           </div>
 
           <p className="text-[12px] text-slate-400 mt-6 max-w-lg mx-auto">
-            🚀 <b>Experience the Tribute:</b> Launches the celebrant tribute screen with custom theme colors, music toggle, typewriter greetings, the interactive &quot;Let&apos;s Celebrate&quot; surprise, candle-blowing cake, and your personal heartfelt epistle in <b>{createdWish.colorTheme.toUpperCase()}</b> theme!
+            🚀 <b>Experience the Tribute:</b> Clicking above opens the tribute starting with the celebratory fireworks canvas greeting, happy birthday serenade, custom theme colors, typewriter greetings, interactive &quot;Let&apos;s Celebrate&quot; surprise, candle-blowing cake, and your personal heartfelt epistle in <b>{createdWish.colorTheme.toUpperCase()}</b> theme!
           </p>
         </div>
       )}

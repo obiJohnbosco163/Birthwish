@@ -6,6 +6,7 @@ import { updateWishClaim } from '../lib/supabase';
 import { generateStandaloneBirthwishHtml } from '../lib/htmlExporter';
 import { generateShareableWishLink } from '../lib/wishEncoder';
 import { happyBirthdayAudio } from '../lib/happyBirthdayAudio';
+import { CelebrantFireworksIntro } from './CelebrantFireworksIntro';
 import { CelebrantSurpriseModal } from './CelebrantSurpriseModal';
 import { CelebrantLastPage } from './CelebrantLastPage';
 import confetti from 'canvas-confetti';
@@ -35,9 +36,11 @@ export const CelebrantView: React.FC<CelebrantViewProps> = ({
   isLoggedIn = false,
 }) => {
   // Navigation / Cinematic Flow States
-  // 1. Surprise Modal with typewriter animation (like https://happy-birthdaysir-kevin.vercel.app/)
+  // 1. Fireworks intro entrance (the very first thing that displays in the birthwish)
+  const [hasEnteredIntro, setHasEnteredIntro] = useState<boolean>(false);
+  // 2. Surprise Modal with typewriter animation
   const [isSurpriseModalOpen, setIsSurpriseModalOpen] = useState<boolean>(false);
-  // 2. Final Page / Epistle & Candle Blow (like https://happy-birthdaysir-kevin.vercel.app/)
+  // 3. Final Page / Epistle & Candle Blow
   const [isFinalPageOpen, setIsFinalPageOpen] = useState<boolean>(false);
 
   // Audio state - start song automatically if desired, or let user toggle
@@ -258,6 +261,20 @@ export const CelebrantView: React.FC<CelebrantViewProps> = ({
           background: `radial-gradient(circle at 50% 20%, ${theme.glow} 0%, rgba(4, 7, 20, 0.98) 75%)`,
         }}
       />
+
+      {/* 1. FIREWORKS INTRO CANVAS ENTRANCE (The first thing that displays in the birthwish) */}
+      {!hasEnteredIntro && (
+        <CelebrantFireworksIntro
+          celebrantName={wish.celebrantNickname || wish.celebrantName}
+          themePrimaryColor={theme.primary}
+          onEnter={() => {
+            setHasEnteredIntro(true);
+            happyBirthdayAudio.playHappyBirthdayMelody(true);
+            setIsPlayingSound(true);
+            triggerConfetti();
+          }}
+        />
+      )}
 
       {/* Top Floating Controls Bar */}
       <div className="w-full max-w-5xl mx-auto flex flex-col items-center gap-3 pt-6 px-4 z-20">

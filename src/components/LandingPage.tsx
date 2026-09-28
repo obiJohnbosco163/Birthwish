@@ -3,7 +3,13 @@ import { BirthwishLogo } from './BirthwishLogo';
 import { Interactive3DCake } from './Interactive3DCake';
 import { ThemeToggle } from './ThemeToggle';
 import { UserProfile, Birthwish } from '../types';
-import { signInWithEmail, signUpWithEmail, signInWithGoogle, signInWithGitHub } from '../lib/supabase';
+import { signInWithEmail, signUpWithEmail } from '../lib/supabase';
+import { 
+  loginWithFirebase, 
+  registerWithFirebase, 
+  signInWithFirebaseGoogle, 
+  signInWithFirebaseGitHub 
+} from '../lib/firebase';
 import { 
   ShieldCheck, 
   Sparkles, 
@@ -61,7 +67,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
   const [isSigningUp, setIsSigningUp] = useState(false);
   const [signUpError, setSignUpError] = useState<string | null>(null);
 
-  // Handle Login via Email & Password
+  // Handle Login via Email & Password using Firebase Authentication
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!loginEmail.trim() || !loginPassword.trim()) {
@@ -73,8 +79,16 @@ export const LandingPage: React.FC<LandingPageProps> = ({
     setLoginError(null);
 
     try {
-      const profile = await signInWithEmail(loginEmail, loginPassword);
-      onLoginSuccess(profile);
+      // First attempt Firebase SDK login
+      try {
+        const fbProfile = await loginWithFirebase(loginEmail, loginPassword);
+        onLoginSuccess(fbProfile);
+        return;
+      } catch (fbErr: any) {
+        // Fallback to Supabase/local accounts if needed
+        const profile = await signInWithEmail(loginEmail, loginPassword);
+        onLoginSuccess(profile);
+      }
     } catch (err: any) {
       setLoginError(err.message || 'Login could not be completed. Please check your credentials.');
     } finally {
@@ -82,7 +96,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
     }
   };
 
-  // Handle Facebook-Style Sign Up
+  // Handle Facebook-Style Sign Up using Firebase Authentication
   const handleSignUpSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!firstName.trim() || !signUpEmail.trim() || !signUpPassword.trim()) {
@@ -103,9 +117,19 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       const formattedDay = birthDay.padStart(2, '0');
       const dateOfBirth = `${birthYear}-${formattedMonth}-${formattedDay}`;
 
-      const profile = await signUpWithEmail(signUpEmail, signUpPassword, fullName, dateOfBirth, gender);
-      setIsSignUpModalOpen(false);
-      onLoginSuccess(profile);
+      // Register using Firebase Auth SDK
+      try {
+        const fbProfile = await registerWithFirebase(signUpEmail, signUpPassword, fullName, dateOfBirth, gender);
+        // Also register in supabase/local registry backup
+        await signUpWithEmail(signUpEmail, signUpPassword, fullName, dateOfBirth, gender).catch(() => {});
+        setIsSignUpModalOpen(false);
+        onLoginSuccess(fbProfile);
+        return;
+      } catch (fbErr: any) {
+        const profile = await signUpWithEmail(signUpEmail, signUpPassword, fullName, dateOfBirth, gender);
+        setIsSignUpModalOpen(false);
+        onLoginSuccess(profile);
+      }
     } catch (err: any) {
       setSignUpError(err.message || 'Sign up failed. Please try again.');
     } finally {
@@ -113,14 +137,36 @@ export const LandingPage: React.FC<LandingPageProps> = ({
     }
   };
 
-  // Handle Continue with Google
+  // Handle Continue with Google via Firebase
   const handleGoogleAuth = async () => {
-    setLoginError('Google OAuth is coming soon! Please use the Email & Password sign in or click "Create new account" below.');
+    try {
+      setIsLoggingIn(true);
+      setLoginError(null);
+      const profile = await signInWithFirebaseGoogle();
+      if (profile) {
+        onLoginSuccess(profile);
+      }
+    } catch (err: any) {
+      setLoginError(err.message || 'Google sign in could not be completed.');
+    } finally {
+      setIsLoggingIn(false);
+    }
   };
 
-  // Handle Continue with GitHub
+  // Handle Continue with GitHub via Firebase
   const handleGitHubAuth = async () => {
-    setLoginError('GitHub OAuth is coming soon! Please use the Email & Password sign in or click "Create new account" below.');
+    try {
+      setIsLoggingIn(true);
+      setLoginError(null);
+      const profile = await signInWithFirebaseGitHub();
+      if (profile) {
+        onLoginSuccess(profile);
+      }
+    } catch (err: any) {
+      setLoginError(err.message || 'GitHub sign in could not be completed.');
+    } finally {
+      setIsLoggingIn(false);
+    }
   };
 
   return (
@@ -334,63 +380,53 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 </button>
               </form>
 
-              {/* Continue with Google (Coming Soon) */}
+              {/* Continue with Google (Active Firebase OAuth) */}
               <button
                 type="button"
                 onClick={handleGoogleAuth}
                 disabled={isLoggingIn}
-                className={`w-full py-2.5 px-4 rounded-xl font-semibold text-xs shadow-sm transition-all flex items-center justify-between cursor-pointer border ${
+                className={`w-full py-3 px-4 rounded-xl font-semibold text-xs shadow-sm transition-all flex items-center justify-center gap-3 cursor-pointer border hover:scale-[1.01] active:scale-[0.99] ${
                   isLight 
-                    ? 'bg-white hover:bg-slate-50 text-slate-800 border-slate-200' 
-                    : 'bg-white/5 hover:bg-white/10 text-white border-white/10'
+                    ? 'bg-white hover:bg-slate-50 text-slate-800 border-slate-300 shadow-sm' 
+                    : 'bg-white/10 hover:bg-white/15 text-white border-white/20'
                 }`}
               >
-                <div className="flex items-center gap-2.5">
-                  <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
-                    <path
-                      fill="#4285F4"
-                      d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.8-2.4 3.66v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.15z"
-                    />
-                    <path
-                      fill="#34A853"
-                      d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.33 24 12 24z"
-                    />
-                    <path
-                      fill="#FBBC05"
-                      d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.17 0 9.97 0 12s.45 3.83 1.25 5.42l4.03-3.15z"
-                    />
-                    <path
-                      fill="#EA4335"
-                      d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"
-                    />
-                  </svg>
-                  <span>Continue with Google</span>
-                </div>
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/15 text-amber-500 border border-amber-500/30">
-                  Coming Soon
-                </span>
+                <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
+                  <path
+                    fill="#4285F4"
+                    d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.8-2.4 3.66v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.15z"
+                  />
+                  <path
+                    fill="#34A853"
+                    d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.33 24 12 24z"
+                  />
+                  <path
+                    fill="#FBBC05"
+                    d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.17 0 9.97 0 12s.45 3.83 1.25 5.42l4.03-3.15z"
+                  />
+                  <path
+                    fill="#EA4335"
+                    d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"
+                  />
+                </svg>
+                <span className="font-bold">Continue with Google</span>
               </button>
 
-              {/* Continue with GitHub (Coming Soon) */}
+              {/* Continue with GitHub (Active Firebase OAuth) */}
               <button
                 type="button"
                 onClick={handleGitHubAuth}
                 disabled={isLoggingIn}
-                className={`w-full py-2.5 px-4 rounded-xl font-semibold text-xs shadow-sm transition-all flex items-center justify-between cursor-pointer border ${
+                className={`w-full py-2.5 px-4 rounded-xl font-semibold text-xs shadow-sm transition-all flex items-center justify-center gap-2.5 cursor-pointer border hover:scale-[1.01] active:scale-[0.99] ${
                   isLight 
                     ? 'bg-slate-50 hover:bg-slate-100 text-slate-800 border-slate-200' 
                     : 'bg-white/5 hover:bg-white/10 text-white border-white/10'
                 }`}
               >
-                <div className="flex items-center gap-2.5">
-                  <svg className="w-4 h-4 fill-current shrink-0" viewBox="0 0 24 24">
-                    <path fillRule="evenodd" clipRule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" />
-                  </svg>
-                  <span>Continue with GitHub</span>
-                </div>
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/15 text-amber-500 border border-amber-500/30">
-                  Coming Soon
-                </span>
+                <svg className="w-4 h-4 fill-current shrink-0" viewBox="0 0 24 24">
+                  <path fillRule="evenodd" clipRule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" />
+                </svg>
+                <span>Continue with GitHub</span>
               </button>
 
               {/* Forgot password */}
