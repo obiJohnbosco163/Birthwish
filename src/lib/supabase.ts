@@ -1,5 +1,6 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { Birthwish, UserProfile } from '../types';
+import { compressImageDataUrl } from './imageCompressor';
 
 /**
  * 1. Supabase Client Setup
@@ -237,6 +238,56 @@ export const setStoredUser = (user: UserProfile | null): void => {
 };
 
 /**
+ * Safely saves wishes array to localStorage with quota-exceeded fallback.
+ * If quota is reached, compress images or prune older heavy base64 images to guarantee it never fails.
+ */
+const setSafeWishesStorage = (wishes: Birthwish[]) => {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(wishes));
+  } catch (quotaError: any) {
+    console.warn('LocalStorage quota limit reached, optimizing storage footprint...', quotaError);
+
+    // Phase 1: Clean up any old placeholder / duplicate caches
+    try {
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (k && k !== STORAGE_KEY && k !== USER_KEY && k !== LOCAL_ACCOUNTS_KEY && !k.startsWith('birthwish_push_')) {
+          localStorage.removeItem(k);
+        }
+      }
+    } catch {}
+
+    // Phase 2: If still overflowing, lightweight older wishes (keep last 20 wishes fully intact, compress older cover images)
+    try {
+      const optimizedWishes = wishes.map((w, idx) => {
+        if (idx > 10) {
+          // If older wish has very large base64 (>50KB), trim it down
+          const trimmed = { ...w };
+          if (trimmed.coverImage && trimmed.coverImage.length > 50000) {
+            trimmed.coverImage = trimmed.coverImage.slice(0, 50000);
+          }
+          if (trimmed.mainImage && trimmed.mainImage.length > 50000) {
+            trimmed.mainImage = trimmed.mainImage.slice(0, 50000);
+          }
+          return trimmed;
+        }
+        return w;
+      });
+
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(optimizedWishes));
+    } catch (phase2Error) {
+      // Phase 3: Ultimate emergency rescue: store only the 15 most recent wishes
+      try {
+        const recentOnly = wishes.slice(0, 15);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(recentOnly));
+      } catch (finalErr) {
+        console.error('Critical quota exhaustion recovery failed:', finalErr);
+      }
+    }
+  }
+};
+
+/**
  * 3. Birthwish Persistence
  */
 export const getStoredWishes = (): Birthwish[] => {
@@ -251,46 +302,56 @@ export const getStoredWishes = (): Birthwish[] => {
 };
 
 export const saveWish = async (wish: Birthwish): Promise<Birthwish> => {
-  const wishes = getStoredWishes();
-  const existingIdx = wishes.findIndex((w) => w.id === wish.id);
-  if (existingIdx >= 0) {
-    wishes[existingIdx] = wish;
-  } else {
-    wishes.unshift(wish);
+  // Compress images if they are heavy raw base64 data URLs before saving
+  let processedWish = { ...wish };
+  if (processedWish.coverImage && processedWish.coverImage.startsWith('data:image')) {
+    processedWish.coverImage = await compressImageDataUrl(processedWish.coverImage, 800, 800, 0.75);
   }
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(wishes));
+  if (processedWish.mainImage && processedWish.mainImage.startsWith('data:image')) {
+    processedWish.mainImage = await compressImageDataUrl(processedWish.mainImage, 600, 600, 0.75);
+  }
+
+  const wishes = getStoredWishes();
+  const existingIdx = wishes.findIndex((w) => w.id === processedWish.id);
+  if (existingIdx >= 0) {
+    wishes[existingIdx] = processedWish;
+  } else {
+    wishes.unshift(processedWish);
+  }
+
+  setSafeWishesStorage(wishes);
 
   try {
     await supabase.from('birthwishes').upsert({
-      id: wish.id,
-      created_at: wish.createdAt,
-      user_id: wish.userId,
-      category: wish.category,
-      custom_category: wish.customCategory,
-      color_theme: wish.colorTheme,
-      celebrant_name: wish.celebrantName,
-      celebrant_nickname: wish.celebrantNickname,
-      celebrant_gender: wish.celebrantGender,
-      cover_image: wish.coverImage,
-      main_image: wish.mainImage,
-      short_message: wish.shortMessage,
-      final_epistle: wish.finalEpistle,
-      sender_relation: wish.senderRelation,
-      sender_name: wish.senderName,
-      has_gift: wish.hasGift,
-      gift_amount: wish.giftAmount,
-      gift_currency: wish.giftCurrency,
-      gift_passcode: wish.giftPasscode,
-      gift_status: wish.giftStatus,
-      gift_claimed_at: wish.giftClaimedAt,
-      claim_details: wish.claimDetails,
-      kora_reference: wish.koraPaymentReference,
+      id: processedWish.id,
+      created_at: processedWish.createdAt,
+      user_id: processedWish.userId,
+      category: processedWish.category,
+      custom_category: processedWish.customCategory,
+      color_theme: processedWish.colorTheme,
+      celebrant_name: processedWish.celebrantName,
+      celebrant_nickname: processedWish.celebrantNickname,
+      celebrant_gender: processedWish.celebrantGender,
+      cover_image: processedWish.coverImage,
+      main_image: processedWish.mainImage,
+      short_message: processedWish.shortMessage,
+      final_epistle: processedWish.finalEpistle,
+      sender_relation: processedWish.senderRelation,
+      sender_name: processedWish.senderName,
+      has_gift: processedWish.hasGift,
+      gift_amount: processedWish.giftAmount,
+      gift_currency: processedWish.giftCurrency,
+      gift_passcode: processedWish.giftPasscode,
+      gift_status: processedWish.giftStatus,
+      gift_claimed_at: processedWish.giftClaimedAt,
+      claim_details: processedWish.claimDetails,
+      kora_reference: processedWish.koraPaymentReference,
     });
   } catch (err) {
     console.warn('Supabase sync notice:', err);
   }
 
-  return wish;
+  return processedWish;
 };
 
 export const updateWishClaim = async (
@@ -305,7 +366,7 @@ export const updateWishClaim = async (
   target.giftClaimedAt = new Date().toISOString();
   target.claimDetails = claimDetails;
 
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(wishes));
+  setSafeWishesStorage(wishes);
 
   try {
     await supabase
@@ -326,4 +387,23 @@ export const updateWishClaim = async (
 export const getWishById = (id: string): Birthwish | null => {
   const wishes = getStoredWishes();
   return wishes.find((w) => w.id === id) || null;
+};
+
+export const deleteStoredWish = async (wishId: string): Promise<boolean> => {
+  try {
+    const wishes = getStoredWishes();
+    const updated = wishes.filter((w) => w.id !== wishId);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+
+    try {
+      await supabase.from('birthwishes').delete().eq('id', wishId);
+    } catch (err) {
+      console.warn('Supabase delete notice:', err);
+    }
+
+    return true;
+  } catch (err) {
+    console.error('Failed to delete wish:', err);
+    return false;
+  }
 };

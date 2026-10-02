@@ -2,10 +2,28 @@ import React, { useRef, useEffect, useState } from 'react';
 import * as THREE from 'three';
 import confetti from 'canvas-confetti';
 
-export const Interactive3DCake: React.FC = () => {
+interface Interactive3DCakeProps {
+  primaryColor?: string;
+  secondaryColor?: string;
+  particleColors?: string[];
+  isBlownExternal?: boolean;
+  onBlow?: () => void;
+  celebrantName?: string;
+}
+
+export const Interactive3DCake: React.FC<Interactive3DCakeProps> = ({
+  primaryColor = '#ec4899',
+  secondaryColor = '#f472b6',
+  particleColors,
+  isBlownExternal,
+  onBlow,
+  celebrantName,
+}) => {
   const mountRef = useRef<HTMLDivElement>(null);
-  const [isBlown, setIsBlown] = useState<boolean>(false);
+  const [internalBlown, setInternalBlown] = useState<boolean>(false);
   const [isHovered, setIsHovered] = useState<boolean>(false);
+
+  const isBlown = isBlownExternal !== undefined ? isBlownExternal : internalBlown;
 
   // References for mouse tracking
   const mouseTargetRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
@@ -35,18 +53,22 @@ export const Interactive3DCake: React.FC = () => {
   };
 
   const handleCakeClick = () => {
-    setIsBlown(true);
+    if (onBlow) {
+      onBlow();
+    } else {
+      setInternalBlown(true);
+      setTimeout(() => {
+        setInternalBlown(false);
+      }, 4500);
+    }
+
     playWishChime();
     confetti({
       particleCount: 90,
       spread: 75,
       origin: { y: 0.6 },
-      colors: ['#F43F5E', '#EC4899', '#FBBF24', '#FDE047', '#E2BD77', '#FFFFFF'],
+      colors: particleColors || [primaryColor, secondaryColor, '#FBBF24', '#FDE047', '#E2BD77', '#FFFFFF'],
     });
-
-    setTimeout(() => {
-      setIsBlown(false);
-    }, 4500);
   };
 
   // Cursor movement listener
@@ -99,10 +121,10 @@ export const Interactive3DCake: React.FC = () => {
 
     container.appendChild(renderer.domElement);
 
-    // 2. High-Fashion Colors (Haute Couture Pink & Champagne Gold)
-    const colorFrostingRose = new THREE.Color('#f472b6');
-    const colorFrostingRaspberry = new THREE.Color('#ec4899');
-    const colorVelvetCream = new THREE.Color('#fff7ed');
+    // 2. High-Fashion Dynamic Colors based on user's chosen rainbow theme
+    const colorFrostingPrimary = new THREE.Color(primaryColor);
+    const colorFrostingSecondary = new THREE.Color(secondaryColor);
+    const colorVelvetCream = new THREE.Color('#fffbf5');
     const colorGoldChampagne = new THREE.Color('#e2bd77');
 
     // 3. Root Interactive 3-Tier Cake Group
@@ -120,7 +142,7 @@ export const Interactive3DCake: React.FC = () => {
       cctx.fillRect(0, 0, 512, 256);
 
       for (let y = 10; y < 256; y += 14) {
-        cctx.strokeStyle = 'rgba(253, 242, 248, 0.6)';
+        cctx.strokeStyle = 'rgba(255, 255, 255, 0.7)';
         cctx.lineWidth = 4;
         cctx.beginPath();
         cctx.moveTo(0, y + Math.sin(y) * 4);
@@ -131,7 +153,7 @@ export const Interactive3DCake: React.FC = () => {
       for (let i = 0; i < 90; i++) {
         const x = Math.random() * 512;
         const y = Math.random() * 256;
-        cctx.fillStyle = 'rgba(226, 189, 119, 0.65)';
+        cctx.fillStyle = 'rgba(226, 189, 119, 0.55)';
         cctx.beginPath();
         cctx.arc(x, y, Math.random() * 2.5 + 1, 0, Math.PI * 2);
         cctx.fill();
@@ -149,14 +171,14 @@ export const Interactive3DCake: React.FC = () => {
     });
 
     const tierBottomMat = new THREE.MeshPhysicalMaterial({
-      color: colorFrostingRaspberry,
+      color: colorFrostingPrimary,
       map: creamTexture,
       roughness: 0.35,
       metalness: 0.08,
       clearcoat: 0.45,
       clearcoatRoughness: 0.3,
       sheen: 0.6,
-      sheenColor: colorFrostingRaspberry,
+      sheenColor: colorFrostingPrimary,
     });
 
     const tierMiddleMat = new THREE.MeshPhysicalMaterial({
@@ -169,14 +191,14 @@ export const Interactive3DCake: React.FC = () => {
     });
 
     const tierTopMat = new THREE.MeshPhysicalMaterial({
-      color: colorFrostingRose,
+      color: colorFrostingSecondary,
       map: creamTexture,
       roughness: 0.32,
       metalness: 0.08,
       clearcoat: 0.5,
       clearcoatRoughness: 0.25,
       sheen: 0.7,
-      sheenColor: colorFrostingRose,
+      sheenColor: colorFrostingSecondary,
     });
 
     const goldRibbonMat = new THREE.MeshStandardMaterial({
@@ -298,7 +320,7 @@ export const Interactive3DCake: React.FC = () => {
     const macaronCount = 5;
     const macaronGeo = new THREE.CylinderGeometry(0.1, 0.1, 0.06, 24);
     const macaronMat = new THREE.MeshStandardMaterial({
-      color: '#f43f5e',
+      color: colorFrostingPrimary,
       roughness: 0.4,
     });
     for (let m = 0; m < macaronCount; m++) {
@@ -516,7 +538,7 @@ export const Interactive3DCake: React.FC = () => {
         container.removeChild(renderer.domElement);
       }
     };
-  }, []);
+  }, [primaryColor, secondaryColor]);
 
   return (
     <div

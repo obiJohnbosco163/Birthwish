@@ -11,6 +11,7 @@ import { initializeKoraHoldingPayment, KORA_CONFIG } from '../lib/kora';
 import { saveWish } from '../lib/supabase';
 import { generateStandaloneBirthwishHtml } from '../lib/htmlExporter';
 import { generateShareableWishLink } from '../lib/wishEncoder';
+import { compressImageDataUrl } from '../lib/imageCompressor';
 import confetti from 'canvas-confetti';
 import { 
   Sparkles, 
@@ -85,6 +86,7 @@ export const CreateWishWizard: React.FC<CreateWishWizardProps> = ({
   const [celebrantName, setCelebrantName] = useState<string>('');
   const [celebrantNickname, setCelebrantNickname] = useState<string>('');
   const [celebrantGender, setCelebrantGender] = useState<CelebrantGender>('female');
+  const [celebrantDateOfBirth, setCelebrantDateOfBirth] = useState<string>('');
   const [coverImage, setCoverImage] = useState<string>(PRESET_COVERS[0]);
   const [mainImage, setMainImage] = useState<string>(PRESET_PORTRAITS[0]);
   const [shortMessage, setShortMessage] = useState<string>('');
@@ -106,18 +108,29 @@ export const CreateWishWizard: React.FC<CreateWishWizardProps> = ({
   const [errorNotice, setErrorNotice] = useState<string | null>(null);
   const [copiedLink, setCopiedLink] = useState<boolean>(false);
 
-  // File to base64 helper
-  const handleImageFile = (e: React.ChangeEvent<HTMLInputElement>, target: 'cover' | 'main') => {
+  // File to base64 helper with automatic responsive compression
+  const handleImageFile = async (e: React.ChangeEvent<HTMLInputElement>, target: 'cover' | 'main') => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      if (typeof reader.result === 'string') {
-        if (target === 'cover') setCoverImage(reader.result);
-        if (target === 'main') setMainImage(reader.result);
+
+    try {
+      const maxDim = target === 'cover' ? 800 : 600;
+      const compressedDataUrl = await compressImageDataUrl(file, maxDim, maxDim, 0.72);
+      if (compressedDataUrl) {
+        if (target === 'cover') setCoverImage(compressedDataUrl);
+        if (target === 'main') setMainImage(compressedDataUrl);
       }
-    };
-    reader.readAsDataURL(file);
+    } catch (err) {
+      console.warn('Image compression fallback:', err);
+      const reader = new FileReader();
+      reader.onload = () => {
+        if (typeof reader.result === 'string') {
+          if (target === 'cover') setCoverImage(reader.result);
+          if (target === 'main') setMainImage(reader.result);
+        }
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   const handleNextFromCategory = () => {
@@ -210,6 +223,7 @@ export const CreateWishWizard: React.FC<CreateWishWizardProps> = ({
       celebrantName,
       celebrantNickname: celebrantNickname.trim() || undefined,
       celebrantGender,
+      celebrantDateOfBirth: celebrantDateOfBirth.trim() || undefined,
       coverImage,
       mainImage,
       shortMessage,
@@ -478,8 +492,8 @@ export const CreateWishWizard: React.FC<CreateWishWizardProps> = ({
             </p>
           </div>
 
-          {/* Section 1: Names & Gender */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {/* Section 1: Names, Date of Birth & Gender */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div>
               <label className="block text-xs font-semibold text-slate-300 mb-1.5">
                 Celebrant Full Name <span className="text-rose-400">*</span>
@@ -508,6 +522,19 @@ export const CreateWishWizard: React.FC<CreateWishWizardProps> = ({
             </div>
 
             <div>
+              <label className="block text-xs font-semibold text-slate-300 mb-1.5 flex items-center justify-between">
+                <span>Date of Birth</span>
+                <span className="text-[10px] text-pink-400 font-normal">Shows in Fireworks</span>
+              </label>
+              <input
+                type="date"
+                value={celebrantDateOfBirth}
+                onChange={(e) => setCelebrantDateOfBirth(e.target.value)}
+                className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-xl text-sm text-white focus:outline-none focus:border-pink-500 transition-colors scheme-dark"
+              />
+            </div>
+
+            <div>
               <label className="block text-xs font-semibold text-slate-300 mb-1.5">
                 Celebrant Gender <span className="text-rose-400">*</span>
               </label>
@@ -517,7 +544,7 @@ export const CreateWishWizard: React.FC<CreateWishWizardProps> = ({
                     key={g}
                     type="button"
                     onClick={() => setCelebrantGender(g)}
-                    className={`py-2 px-2 rounded-xl text-xs font-semibold capitalize border transition-all cursor-pointer ${
+                    className={`py-2 px-1 rounded-xl text-xs font-semibold capitalize border transition-all cursor-pointer ${
                       celebrantGender === g
                         ? 'bg-pink-500/20 text-pink-300 border-pink-500'
                         : 'bg-white/5 text-slate-400 border-white/10 hover:text-white'

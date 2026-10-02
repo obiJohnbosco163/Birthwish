@@ -7,8 +7,9 @@ import { CelebrantView } from './components/CelebrantView';
 import { UserOnboardingModal } from './components/UserOnboardingModal';
 import { OAuthConsent } from './components/OAuthConsent';
 import { Birthwish, UserProfile } from './types';
-import { getStoredWishes, getStoredUser, setStoredUser, signOutUser, supabase, saveWish } from './lib/supabase';
+import { getStoredWishes, getStoredUser, setStoredUser, signOutUser, supabase, saveWish, deleteStoredWish } from './lib/supabase';
 import { decodeShareableWish } from './lib/wishEncoder';
+import { checkAndNotifyBirthdays } from './lib/notificationService';
 
 export default function App() {
   // White mode is now the DEFAULT toggle mode
@@ -138,6 +139,29 @@ export default function App() {
     }
   }, [user, currentView]);
 
+  // Periodic notification checker for any birthday celebrating today
+  useEffect(() => {
+    if (wishes.length === 0) return;
+    
+    // Check on startup
+    checkAndNotifyBirthdays(wishes, (wish) => {
+      setActiveWish(wish);
+      setCurrentView('view');
+      window.location.hash = `wish-${wish.id}`;
+    });
+
+    // Check once every hour in background
+    const interval = setInterval(() => {
+      checkAndNotifyBirthdays(wishes, (wish) => {
+        setActiveWish(wish);
+        setCurrentView('view');
+        window.location.hash = `wish-${wish.id}`;
+      });
+    }, 60 * 60 * 1000);
+
+    return () => clearInterval(interval);
+  }, [wishes]);
+
   const handleLoginSuccess = (authenticatedUser: UserProfile) => {
     setUser(authenticatedUser);
     setStoredUser(authenticatedUser);
@@ -213,6 +237,14 @@ export default function App() {
     window.location.hash = `wish-${wish.id}`;
   };
 
+  const handleDeleteWish = async (wishId: string) => {
+    await deleteStoredWish(wishId);
+    setWishes((prev) => prev.filter((w) => w.id !== wishId));
+    if (activeWish?.id === wishId) {
+      setActiveWish(null);
+    }
+  };
+
   const isLight = theme === 'light';
 
   return (
@@ -274,6 +306,7 @@ export default function App() {
             wishes={wishes}
             onCreateClick={handleCreateClick}
             onViewWish={handlePreviewWish}
+            onDeleteWish={handleDeleteWish}
             theme={theme}
             onOpenTutorial={() => setIsOnboardingOpen(true)}
           />

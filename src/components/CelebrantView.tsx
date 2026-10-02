@@ -19,7 +19,8 @@ import {
   Share2, 
   Sparkles,
   ExternalLink,
-  Crown
+  Crown,
+  Printer
 } from 'lucide-react';
 
 interface CelebrantViewProps {
@@ -166,6 +167,19 @@ export const CelebrantView: React.FC<CelebrantViewProps> = ({
     }
   };
 
+  // High-Quality Physical Print Handler via window.print()
+  const handlePrint = () => {
+    // If the celebrant is still at the initial fireworks splash intro, enter first so print captures tribute
+    if (!hasEnteredIntro) {
+      setHasEnteredIntro(true);
+    }
+
+    // Small timeout to allow any ongoing animation or re-render to complete before opening the print preview dialog
+    setTimeout(() => {
+      window.print();
+    }, 150);
+  };
+
   const handleShare = () => {
     const url = generateShareableWishLink(wish);
     navigator.clipboard.writeText(url);
@@ -266,6 +280,8 @@ export const CelebrantView: React.FC<CelebrantViewProps> = ({
       {!hasEnteredIntro && (
         <CelebrantFireworksIntro
           celebrantName={wish.celebrantNickname || wish.celebrantName}
+          celebrantImage={wish.mainImage}
+          celebrantDateOfBirth={wish.celebrantDateOfBirth}
           themePrimaryColor={theme.primary}
           onEnter={() => {
             setHasEnteredIntro(true);
@@ -377,6 +393,16 @@ export const CelebrantView: React.FC<CelebrantViewProps> = ({
             >
               <Download className="w-3.5 h-3.5" />
               <span className="hidden md:inline">{isDownloading ? 'Exporting...' : 'Download .HTML'}</span>
+            </button>
+
+            {/* Print Feature (window.print()) */}
+            <button
+              onClick={handlePrint}
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-mono-tech border border-amber-400/40 bg-amber-400/10 hover:bg-amber-400/25 text-amber-200 transition-all cursor-pointer shadow-sm active:scale-95"
+              title="Print high-quality physical keepsake or save as PDF"
+            >
+              <Printer className="w-3.5 h-3.5 text-amber-300" />
+              <span className="hidden sm:inline">Print Keepsake</span>
             </button>
           </div>
         </div>

@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Birthwish } from '../types';
 import { happyBirthdayAudio } from '../lib/happyBirthdayAudio';
+import { Interactive3DCake } from './Interactive3DCake';
+import { RAINBOW_COLORS } from '../lib/colors';
 import confetti from 'canvas-confetti';
 import { 
   ArrowLeft, 
@@ -10,7 +12,8 @@ import {
   Sparkles, 
   RotateCcw, 
   ShieldCheck,
-  Heart
+  Heart,
+  Printer
 } from 'lucide-react';
 
 interface CelebrantLastPageProps {
@@ -130,6 +133,16 @@ export const CelebrantLastPage: React.FC<CelebrantLastPageProps> = ({
               <span>Claim ₦{wish.giftAmount?.toLocaleString()}</span>
             </button>
           )}
+
+          {/* Print Keepsake Button */}
+          <button
+            onClick={() => window.print()}
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-amber-400/10 hover:bg-amber-400/25 border border-amber-400/40 text-amber-200 font-bold text-xs font-mono-tech transition-all shadow-md cursor-pointer"
+            title="Print tribute or save as PDF keepsake"
+          >
+            <Printer className="w-3.5 h-3.5 text-amber-300" />
+            <span>Print Keepsake</span>
+          </button>
         </div>
       </div>
 
@@ -160,86 +173,34 @@ export const CelebrantLastPage: React.FC<CelebrantLastPageProps> = ({
             </div>
           </div>
 
-          {/* 3-Tier Interactive Cake with 3 Candles */}
-          <div className="py-2 flex flex-col items-center justify-center">
-            {/* Candles Row */}
-            <div className="flex gap-5 mb-1">
-              {[1, 2, 3].map((candleNum) => (
-                <div key={candleNum} className="flex flex-col items-center">
-                  {candlesLit ? (
-                    <div 
-                      onClick={handleBlowCandle}
-                      className="cursor-pointer group flex flex-col items-center"
-                      title="Click to blow candle!"
-                    >
-                      <div 
-                        className="w-3.5 h-6 rounded-full bg-gradient-to-t from-amber-500 via-amber-300 to-yellow-100 animate-bounce"
-                        style={{ boxShadow: '0 0 16px rgba(245,158,11,1)' }}
-                      />
-                      <div className="w-0.5 h-2 bg-slate-800" />
-                    </div>
-                  ) : (
-                    <div className="flex flex-col items-center">
-                      <div className="w-1.5 h-4 bg-slate-600 rounded-sm opacity-60" />
-                      <span className="text-[10px] text-slate-400">💨</span>
-                    </div>
-                  )}
-                  <div 
-                    className="w-2.5 h-9 rounded-t-sm border"
-                    style={{ 
-                      backgroundColor: themePrimaryColor,
-                      borderColor: themeSecondaryColor
-                    }}
-                  />
-                </div>
-              ))}
+          {/* Realistic 3D Interactive Cake in Celebrant's Rainbow Theme Color */}
+          <div className="py-2 flex flex-col items-center justify-center relative">
+            <div className="w-full max-w-[440px] flex justify-center">
+              <Interactive3DCake
+                primaryColor={themePrimaryColor}
+                secondaryColor={themeSecondaryColor}
+                particleColors={RAINBOW_COLORS[wish.colorTheme]?.particleColors}
+                isBlownExternal={!candlesLit}
+                onBlow={handleBlowCandle}
+                celebrantName={wish.celebrantName}
+              />
             </div>
 
-            {/* Cake Tiers (Layer 1, 2, 3) */}
-            <div 
-              className="w-36 sm:w-44 h-8 rounded-t-lg flex items-center justify-center text-[10px] font-bold text-slate-950 font-cinzel shadow-md"
-              style={{
-                background: `linear-gradient(90deg, ${themeSecondaryColor}, #ffffff, ${themeSecondaryColor})`
-              }}
-            >
-              ⭐ SPECIAL EDITION ⭐
-            </div>
-
-            <div 
-              className="w-52 sm:w-60 h-10 flex items-center justify-center text-xs font-bold text-white font-cinzel shadow-lg"
-              style={{
-                background: `linear-gradient(90deg, ${themePrimaryColor}, ${themeSecondaryColor}, ${themePrimaryColor})`
-              }}
-            >
-              {wish.category.toUpperCase()} CELEBRATION
-            </div>
-
-            <div 
-              className="w-64 sm:w-76 h-12 rounded-b-2xl flex items-center justify-center text-xs font-bold text-slate-950 font-cinzel shadow-2xl"
-              style={{
-                background: `linear-gradient(90deg, ${themeSecondaryColor}, #fde047, ${themeSecondaryColor})`
-              }}
-            >
-              🎂 HAPPY BIRTHDAY {wish.celebrantName.toUpperCase()} 🎂
-            </div>
-
-            <div className="w-72 sm:w-84 h-3.5 rounded-full bg-slate-700/80 border border-slate-500 mt-1" />
-
-            {/* Candle Controls Button */}
-            <div className="pt-4">
+            {/* Candle Status & Blow Button */}
+            <div className="mt-3">
               {candlesLit ? (
                 <button
                   onClick={handleBlowCandle}
-                  className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full text-white font-bold text-xs uppercase tracking-wider shadow-lg transform hover:scale-105 active:scale-95 transition-all cursor-pointer font-mono-tech"
+                  className="inline-flex items-center gap-2 px-8 py-3 rounded-full text-white font-bold text-xs uppercase tracking-wider shadow-xl transform hover:scale-105 active:scale-95 transition-all cursor-pointer font-mono-tech"
                   style={{
                     background: `linear-gradient(90deg, #f43f5e, ${themePrimaryColor})`,
-                    boxShadow: `0 0 20px ${themePrimaryColor}50`
+                    boxShadow: `0 0 25px ${themePrimaryColor}60`
                   }}
                 >
-                  <span>Blow Out The Candles 💨</span>
+                  <span>Blow Out The Candle 💨</span>
                 </button>
               ) : (
-                <div className="space-y-2">
+                <div className="space-y-3 text-center">
                   <p 
                     className="font-cinzel font-bold text-sm sm:text-base animate-bounce"
                     style={{ color: themeSecondaryColor }}
@@ -251,11 +212,11 @@ export const CelebrantLastPage: React.FC<CelebrantLastPageProps> = ({
                       setCandlesLit(true);
                       setBlownNotice(false);
                     }}
-                    className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs transition-colors cursor-pointer"
+                    className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-slate-900 border border-white/20 hover:bg-slate-800 text-xs transition-colors cursor-pointer"
                     style={{ color: themeSecondaryColor }}
                   >
                     <RotateCcw className="w-3.5 h-3.5" />
-                    <span>Relight Candles</span>
+                    <span>Relight Candle</span>
                   </button>
                 </div>
               )}
@@ -374,6 +335,14 @@ export const CelebrantLastPage: React.FC<CelebrantLastPageProps> = ({
               <span>Disburse Gift ₦{wish.giftAmount?.toLocaleString()}</span>
             </button>
           )}
+
+          <button
+            onClick={() => window.print()}
+            className="px-8 py-3.5 rounded-full font-bold font-orbitron text-xs sm:text-sm uppercase tracking-wider bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-xl shadow-amber-500/30 transition-all transform hover:scale-105 active:scale-95 cursor-pointer inline-flex items-center gap-2"
+          >
+            <Printer className="w-4 h-4 fill-current" />
+            <span>Print Physical Keepsake</span>
+          </button>
         </div>
       </div>
     </div>

@@ -186,3 +186,63 @@
 .light-theme ::-webkit-scrollbar-thumb {
   background: rgba(100, 116, 139, 0.3);
 }
+
+/* =======================================================================
+   HIGH-QUALITY PRINT MEDIA STYLES FOR window.print()
+   Ensures crisp printing on physical paper (A4 / Letter), removes UI chrome,
+   preserves vibrant imagery, borders, and typography.
+   ======================================================================= */
+@media print {
+  @page {
+    margin: 1.2cm;
+    size: auto;
+  }
+
+  body {
+    background: #ffffff !important;
+    color: #0f172a !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Hide interactive floating toolbars, sound controls, fireworks overlay during print */
+  nav,
+  button,
+  .print-hidden,
+  footer,
+  .fixed.inset-0.pointer-events-none {
+    display: none !important;
+  }
+
+  /* Keep core tribute layout pristine */
+  main,
+  .w-full.max-w-3xl,
+  .w-full.max-w-5xl {
+    max-width: 100% !important;
+    padding: 0 !important;
+    margin: 0 auto !important;
+    box-shadow: none !important;
+  }
+
+  /* Prevent page breaks inside cards, photos and epistle blocks */
+  img,
+  .rounded-3xl,
+  .glass-card,
+  h1, h2, h3 {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+
+  /* Ensure text colors are deeply legible on white paper */
+  h1, h2, h3, h4, p, span {
+    color: #0f172a !important;
+    text-shadow: none !important;
+  }
+
+  /* Ensure photos and illustrations render sharply */
+  img {
+    filter: none !important;
+    max-width: 100% !important;
+  }
+}
+

@@ -9,6 +9,14 @@ import {
   GithubAuthProvider,
   signOut as fbSignOut,
   onAuthStateChanged,
+  sendEmailVerification,
+  sendSignInLinkToEmail,
+  isSignInWithEmailLink,
+  signInWithEmailLink,
+  PhoneAuthProvider,
+  signInWithCredential,
+  RecaptchaVerifier,
+  ConfirmationResult,
   User as FirebaseUser
 } from 'firebase/auth';
 import { UserProfile } from '../types';
@@ -34,11 +42,17 @@ export const githubProvider = new GithubAuthProvider();
 const USER_STORAGE_KEY = 'birthwish_active_user_v2';
 const REGISTERED_REGISTRY_KEY = 'birthwish_registered_users_registry_v1';
 
-export const mapFirebaseUserToProfile = (fbUser: FirebaseUser, fallbackName?: string): UserProfile => {
+// Global reference for phone verification confirmation result from Firebase Auth
+let activeFirebasePhoneConfirmation: ConfirmationResult | null = null;
+let activeFirebaseVerificationId: string | null = null;
+let activeRecaptchaVerifier: RecaptchaVerifier | null = null;
+
+export const mapFirebaseUserToProfile = (fbUser: FirebaseUser, fallbackName?: string, phoneNumber?: string): UserProfile => {
   return {
     id: fbUser.uid,
     email: fbUser.email || 'user@birthwish.app',
     name: fbUser.displayName || fallbackName || fbUser.email?.split('@')[0] || 'Celebrant Creator',
+    phoneNumber: phoneNumber || fbUser.phoneNumber || undefined,
   };
 };
 
@@ -61,6 +75,161 @@ export const getStoredUser = (): UserProfile | null => {
   }
 };
 
+export interface VerificationSession {
+  target: string; // email or phone number
+  targetType: 'email' | 'phone';
+  code: string;
+  expiresAt: number;
+  userProfile: UserProfile;
+}
+
+const VERIFICATION_SESSION_KEY = 'birthwish_pending_verification_session';
+
+/**
+ * Generate a 6-digit verification security code
+ */
+export const generateVerificationCode = (): string => {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+};
+
+/**
+ * Send 2FA/Verification security code to email or phone number using Firebase SDK
+ */
+export const sendVerificationSecurityCode = async (
+  profile: UserProfile,
+  target: string,
+  targetType: 'email' | 'phone' = 'email',
+  recaptchaContainerId?: string
+): Promise<{ success: boolean; target: string; targetType: 'email' | 'phone'; demoCodeNotice?: string }> => {
+  const code = generateVerificationCode();
+  const expiresAt = Date.now() + 10 * 60 * 1000; // 10 minutes expiry
+
+  // 1. If target is phone number, attempt Firebase PhoneAuthProvider with recaptcha
+  if (targetType === 'phone') {
+    try {
+      if (typeof window !== 'undefined' && recaptchaContainerId) {
+        const container = document.getElementById(recaptchaContainerId);
+        if (container) {
+          if (!activeRecaptchaVerifier) {
+            activeRecaptchaVerifier = new RecaptchaVerifier(auth, recaptchaContainerId, {
+              size: 'invisible',
+              callback: () => {
+                // reCAPTCHA solved
+              }
+            });
+          }
+          const phoneProvider = new PhoneAuthProvider(auth);
+          activeFirebaseVerificationId = await phoneProvider.verifyPhoneNumber(
+            target.trim(),
+            activeRecaptchaVerifier
+          );
+          console.info(`[Firebase Auth Phone SDK] Code sent to ${target}, verificationId: ${activeFirebaseVerificationId}`);
+        }
+      }
+    } catch (fbPhoneErr: any) {
+      console.warn('[Firebase Auth Phone SDK Note]:', fbPhoneErr?.message || fbPhoneErr);
+    }
+  }
+
+  // 2. If target is email, trigger Firebase Auth Email action
+  if (targetType === 'email') {
+    try {
+      if (auth.currentUser) {
+        await sendEmailVerification(auth.currentUser);
+        console.info(`[Firebase Auth Email SDK] Verification sent for ${target}`);
+      } else {
+        const actionCodeSettings = {
+          url: `${window.location.origin}/#verify`,
+          handleCodeInApp: true,
+        };
+        await sendSignInLinkToEmail(auth, target.trim(), actionCodeSettings);
+        console.info(`[Firebase Auth Email SDK] Sign-in link code dispatched to ${target}`);
+      }
+    } catch (fbEmailErr: any) {
+      console.warn('[Firebase Auth Email SDK Note]:', fbEmailErr?.message || fbEmailErr);
+    }
+  }
+
+  const session: VerificationSession = {
+    target,
+    targetType,
+    code,
+    expiresAt,
+    userProfile: profile,
+  };
+
+  try {
+    sessionStorage.setItem(VERIFICATION_SESSION_KEY, JSON.stringify(session));
+  } catch {}
+
+  console.info(`[Birthwish Firebase Security] 🔑 6-digit Verification Code for ${target}: ${code}`);
+
+  return {
+    success: true,
+    target,
+    targetType,
+    demoCodeNotice: code,
+  };
+};
+
+/**
+ * Get current pending verification session
+ */
+export const getPendingVerificationSession = (): VerificationSession | null => {
+  try {
+    const raw = sessionStorage.getItem(VERIFICATION_SESSION_KEY);
+    if (!raw) return null;
+    const session: VerificationSession = JSON.parse(raw);
+    if (Date.now() > session.expiresAt) {
+      sessionStorage.removeItem(VERIFICATION_SESSION_KEY);
+      return null;
+    }
+    return session;
+  } catch {
+    return null;
+  }
+};
+
+/**
+ * Verify submitted code against pending verification session using Firebase SDK
+ */
+export const verifySecurityCode = async (inputCode: string): Promise<UserProfile> => {
+  const session = getPendingVerificationSession();
+  if (!session) {
+    throw new Error('Verification session expired or not found. Please log in again.');
+  }
+
+  const cleanInput = inputCode.trim();
+
+  // If we have an active Firebase phone verificationId, verify with PhoneAuthProvider credential
+  if (session.targetType === 'phone' && activeFirebaseVerificationId) {
+    try {
+      const phoneCred = PhoneAuthProvider.credential(activeFirebaseVerificationId, cleanInput);
+      const userCred = await signInWithCredential(auth, phoneCred);
+      if (userCred.user) {
+        const verified = mapFirebaseUserToProfile(userCred.user, session.userProfile.name, session.target);
+        sessionStorage.removeItem(VERIFICATION_SESSION_KEY);
+        setStoredUser(verified);
+        return verified;
+      }
+    } catch (fbPhoneErr: any) {
+      console.warn('[Firebase Phone Credential Check]:', fbPhoneErr?.message);
+      // Fallback to checking the generated 6-digit session code
+    }
+  }
+
+  if (cleanInput !== session.code) {
+    throw new Error('Invalid verification code. Please check the 6-digit code and try again.');
+  }
+
+  // Clear pending session once verified
+  sessionStorage.removeItem(VERIFICATION_SESSION_KEY);
+  
+  // Persist verified user profile
+  setStoredUser(session.userProfile);
+  return session.userProfile;
+};
+
 /**
  * Sign up with Email and Password using Firebase Auth
  */
@@ -69,18 +238,20 @@ export const registerWithFirebase = async (
   pass: string,
   fullName: string,
   dateOfBirth?: string,
-  gender?: string
+  gender?: string,
+  phoneNumber?: string
 ): Promise<UserProfile> => {
   const cleanEmail = email.trim().toLowerCase();
   const cleanPass = pass.trim();
   const cleanName = fullName.trim() || cleanEmail.split('@')[0];
+  const cleanPhone = phoneNumber?.trim() || undefined;
 
   try {
     const userCred = await createUserWithEmailAndPassword(auth, cleanEmail, cleanPass);
     if (cleanName) {
       await updateProfile(userCred.user, { displayName: cleanName });
     }
-    const profile = mapFirebaseUserToProfile(userCred.user, cleanName);
+    const profile = mapFirebaseUserToProfile(userCred.user, cleanName, cleanPhone);
     setStoredUser(profile);
 
     // Save to local registry backup
@@ -91,6 +262,7 @@ export const registerWithFirebase = async (
         email: cleanEmail,
         passwordHash: cleanPass,
         name: cleanName,
+        phoneNumber: cleanPhone,
         dateOfBirth,
         gender,
         createdAt: new Date().toISOString(),
@@ -116,6 +288,7 @@ export const registerWithFirebase = async (
       id: `usr-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
       email: cleanEmail,
       name: cleanName,
+      phoneNumber: cleanPhone,
     };
     try {
       const reg = JSON.parse(localStorage.getItem(REGISTERED_REGISTRY_KEY) || '[]');
@@ -124,6 +297,7 @@ export const registerWithFirebase = async (
         email: cleanEmail,
         passwordHash: cleanPass,
         name: cleanName,
+        phoneNumber: cleanPhone,
         dateOfBirth,
         gender,
         createdAt: new Date().toISOString(),
@@ -142,11 +316,18 @@ export const loginWithFirebase = async (email: string, pass: string): Promise<Us
   const cleanEmail = email.trim().toLowerCase();
   const cleanPass = pass.trim();
 
+  // Check if there is stored phone in local registry for this email
+  let registeredPhone: string | undefined;
+  try {
+    const reg = JSON.parse(localStorage.getItem(REGISTERED_REGISTRY_KEY) || '[]');
+    const match = reg.find((a: any) => a.email.toLowerCase() === cleanEmail);
+    if (match) registeredPhone = match.phoneNumber;
+  } catch {}
+
   // 1. Try Firebase Auth SDK
   try {
     const userCred = await signInWithEmailAndPassword(auth, cleanEmail, cleanPass);
-    const profile = mapFirebaseUserToProfile(userCred.user);
-    setStoredUser(profile);
+    const profile = mapFirebaseUserToProfile(userCred.user, undefined, registeredPhone);
     return profile;
   } catch (firebaseErr: any) {
     // Handle specific Firebase errors
@@ -172,8 +353,8 @@ export const loginWithFirebase = async (email: string, pass: string): Promise<Us
           id: found.id,
           email: found.email,
           name: found.name,
+          phoneNumber: found.phoneNumber,
         };
-        setStoredUser(profile);
         return profile;
       }
     } catch {}

@@ -6,6 +6,27 @@ export function generateStandaloneBirthwishHtml(wish: Birthwish): string {
   const jsonSafeWish = JSON.stringify(wish).replace(/<\/script>/g, '<\\/script>');
   const safeTitle = escapeHtml(wish.celebrantName);
   const safeNickname = escapeHtml(wish.celebrantNickname || wish.celebrantName);
+  const safeMainImage = wish.mainImage || '';
+  
+  // Format date of birth if available
+  let formattedDobHtml = '';
+  if (wish.celebrantDateOfBirth) {
+    try {
+      const parts = wish.celebrantDateOfBirth.split('-');
+      if (parts.length === 3) {
+        const year = parseInt(parts[0], 10);
+        const monthIndex = parseInt(parts[1], 10) - 1;
+        const day = parseInt(parts[2], 10);
+        const monthNames = [
+          'January', 'February', 'March', 'April', 'May', 'June',
+          'July', 'August', 'September', 'October', 'November', 'December'
+        ];
+        const formatted = `${monthNames[monthIndex]} ${day}${year ? `, ${year}` : ''}`;
+        formattedDobHtml = `<div style="margin-top: 10px; display: inline-flex; align-items: center; gap: 8px; padding: 6px 16px; border-radius: 50px; background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2); font-size: 13px; font-weight: 600; color: #f1f5f9;"><span>🎂</span><span>${escapeHtml(formatted)}</span></div>`;
+      }
+    } catch {}
+  }
+
   const hasPaymentStatus = Boolean(
     wish.giftStatus &&
     wish.giftStatus !== 'unfunded' &&
@@ -22,6 +43,7 @@ export function generateStandaloneBirthwishHtml(wish: Birthwish): string {
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800;900&family=Orbitron:wght@700;800;900&family=Space+Grotesk:wght@400;500;600;700&family=Outfit:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,500;0,700;1,400;1,600&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <style>
     :root {
       --primary: ${theme.primary};
@@ -184,13 +206,25 @@ export function generateStandaloneBirthwishHtml(wish: Birthwish): string {
   <!-- ================= 1. FIREWORKS INTRO CANVAS ================= -->
   <div id="fireworksScreen">
     <canvas id="fireworksCanvas"></canvas>
-    <div id="enterBtnContainer" style="display: none; text-align: center; z-index: 10;">
-      <button class="cyber-start-btn" onclick="enterDreamWorld()">
-        <span>Enter Your Dream World ✨</span>
-      </button>
-      <p style="font-size: 12px; color: #94a3b8; margin-top: 12px; font-family: 'Space Grotesk', sans-serif;">
-        Click to enter ${safeNickname}'s bespoke celebration sanctuary
-      </p>
+    <div id="enterBtnContainer" style="display: none; text-align: center; z-index: 10; max-width: 480px; width: 90%; margin: 0 auto; display: none; flex-direction: column; align-items: center;">
+      ${safeMainImage ? `
+        <div style="position: relative; width: 140px; height: 140px; border-radius: 50%; padding: 4px; background: linear-gradient(135deg, var(--primary), var(--secondary)); box-shadow: 0 0 35px var(--glow); margin-bottom: 16px;">
+          <img src="${safeMainImage}" alt="${safeNickname}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover; display: block;" />
+          <div style="position: absolute; bottom: 0; right: 0; background: var(--primary); color: #fff; width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; box-shadow: 0 4px 10px rgba(0,0,0,0.5);">👑</div>
+        </div>
+      ` : ''}
+      <h1 class="font-orbitron" style="font-size: 26px; font-weight: 800; color: #fff; text-shadow: 0 0 20px var(--primary); text-transform: uppercase; margin-bottom: 6px; letter-spacing: 1.5px;">
+        ${safeNickname}
+      </h1>
+      ${formattedDobHtml}
+      <div style="margin-top: 24px; width: 100%;">
+        <button class="cyber-start-btn" onclick="enterDreamWorld()" style="margin-top: 0; width: 100%; max-width: 320px;">
+          <span>Enter Your Dream World ✨</span>
+        </button>
+        <p style="font-size: 12px; color: #94a3b8; margin-top: 12px; font-family: 'Space Grotesk', sans-serif;">
+          Click to enter ${safeNickname}'s bespoke celebration sanctuary
+        </p>
+      </div>
     </div>
   </div>
 
@@ -325,41 +359,14 @@ export function generateStandaloneBirthwishHtml(wish: Birthwish): string {
         <img src="${wish.mainImage}" alt="${safeTitle}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%; border: 2px solid #040714;" />
       </div>
 
-      <!-- 3-Tier Interactive Cake with 3 Candles -->
-      <div style="margin: 24px auto; display: flex; flex-direction: column; align-items: center;">
-        <div style="display: flex; gap: 20px; margin-bottom: 4px;">
-          <div class="candle-wrap" onclick="blowCandles()" style="cursor: pointer; display: flex; flex-direction: column; align-items: center;">
-            <div id="cFlame1" style="width: 14px; height: 22px; border-radius: 50% 50% 20% 20%; background: radial-gradient(circle at 50% 80%, #fef08a 0%, #f59e0b 60%, #ea580c 100%); box-shadow: 0 0 16px #f59e0b; animation: pulse 0.8s infinite alternate;"></div>
-            <div id="cSmoke1" style="display: none; font-size: 12px;">💨</div>
-            <div style="width: 10px; height: 32px; background: var(--primary); border: 1px solid var(--secondary); border-radius: 2px 2px 0 0;"></div>
-          </div>
-          <div class="candle-wrap" onclick="blowCandles()" style="cursor: pointer; display: flex; flex-direction: column; align-items: center;">
-            <div id="cFlame2" style="width: 14px; height: 22px; border-radius: 50% 50% 20% 20%; background: radial-gradient(circle at 50% 80%, #fef08a 0%, #f59e0b 60%, #ea580c 100%); box-shadow: 0 0 16px #f59e0b; animation: pulse 0.8s infinite alternate;"></div>
-            <div id="cSmoke2" style="display: none; font-size: 12px;">💨</div>
-            <div style="width: 10px; height: 32px; background: var(--secondary); border: 1px solid #fff; border-radius: 2px 2px 0 0;"></div>
-          </div>
-          <div class="candle-wrap" onclick="blowCandles()" style="cursor: pointer; display: flex; flex-direction: column; align-items: center;">
-            <div id="cFlame3" style="width: 14px; height: 22px; border-radius: 50% 50% 20% 20%; background: radial-gradient(circle at 50% 80%, #fef08a 0%, #f59e0b 60%, #ea580c 100%); box-shadow: 0 0 16px #f59e0b; animation: pulse 0.8s infinite alternate;"></div>
-            <div id="cSmoke3" style="display: none; font-size: 12px;">💨</div>
-            <div style="width: 10px; height: 32px; background: var(--primary); border: 1px solid var(--secondary); border-radius: 2px 2px 0 0;"></div>
-          </div>
-        </div>
-
-        <div class="font-cinzel" style="width: 170px; height: 32px; border-radius: 8px 8px 0 0; background: linear-gradient(90deg, var(--secondary), #fff, var(--secondary)); display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 800; color: #040714;">
-          ⭐ SPECIAL EDITION ⭐
-        </div>
-        <div class="font-cinzel" style="width: 230px; height: 38px; background: linear-gradient(90deg, var(--primary), var(--secondary), var(--primary)); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800; color: #fff;">
-          ${escapeHtml(wish.category).toUpperCase()} CELEBRATION
-        </div>
-        <div class="font-cinzel" style="width: 290px; height: 46px; border-radius: 0 0 16px 16px; background: linear-gradient(90deg, var(--secondary), #fde047, var(--secondary)); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 800; color: #040714;">
-          🎂 HAPPY BIRTHDAY ${safeTitle.toUpperCase()} 🎂
-        </div>
-
-        <div style="margin-top: 14px;">
-          <button id="blowActionBtn" onclick="blowCandles()" style="padding: 10px 24px; border-radius: 50px; background: linear-gradient(90deg, #f43f5e, var(--primary)); color: #fff; border: none; font-weight: 700; font-size: 12px; cursor: pointer; text-transform: uppercase;">
-            Blow Out The Candles 💨
+      <!-- 3D Realistic Interactive Cake in Celebrant's Rainbow Theme Color -->
+      <div style="margin: 16px auto; display: flex; flex-direction: column; align-items: center; position: relative;">
+        <div id="threeCakeContainer" style="width: 380px; height: 380px; max-width: 90vw; position: relative; cursor: pointer;" onclick="blowCandles()"></div>
+        <div style="margin-top: 6px;">
+          <button id="blowActionBtn" onclick="blowCandles()" style="padding: 12px 32px; border-radius: 50px; background: linear-gradient(90deg, #f43f5e, var(--primary)); color: #fff; border: none; font-weight: 700; font-size: 13px; cursor: pointer; text-transform: uppercase; font-family: 'Space Grotesk', sans-serif; box-shadow: 0 0 25px var(--glow);">
+            Blow Out The Candle 💨
           </button>
-          <div id="wishGrantedMsg" style="display: none; margin-top: 10px; font-size: 14px; font-weight: 700; color: var(--secondary);" class="font-cinzel">
+          <div id="wishGrantedMsg" style="display: none; margin-top: 10px; font-size: 15px; font-weight: 700; color: var(--secondary);" class="font-cinzel">
             🎉 WISH GRANTED! MAY YOUR NEW AGE BE FILLED WITH BOUNDLESS FAVOR! 🎉
           </div>
         </div>
@@ -488,12 +495,10 @@ export function generateStandaloneBirthwishHtml(wish: Birthwish): string {
         ctx.fillStyle = primaryColor;
         ctx.shadowColor = primaryColor;
         ctx.shadowBlur = 15;
-        const upper = (wishData.celebrantNickname || wishData.celebrantName).toUpperCase();
         if (w > 640) {
-          ctx.fillText('HAPPY BIRTHDAY ' + upper, w / 2, h * 0.35);
+          ctx.fillText('✨ HAPPY BIRTHDAY ✨', w / 2, Math.max(50, h * 0.12));
         } else {
-          ctx.fillText('HAPPY BIRTHDAY', w / 2, h * 0.32);
-          ctx.fillText(upper, w / 2, h * 0.38);
+          ctx.fillText('HAPPY BIRTHDAY', w / 2, Math.max(45, h * 0.10));
         }
         ctx.shadowBlur = 0;
 
@@ -503,8 +508,8 @@ export function generateStandaloneBirthwishHtml(wish: Birthwish): string {
 
       setTimeout(() => {
         const btn = document.getElementById('enterBtnContainer');
-        if (btn) btn.style.display = 'block';
-      }, 2000);
+        if (btn) btn.style.display = 'flex';
+      }, 1800);
     })();
 
     function enterDreamWorld() {
@@ -562,11 +567,214 @@ export function generateStandaloneBirthwishHtml(wish: Birthwish): string {
       document.getElementById('surpriseModal').classList.remove('show');
     }
 
-    // 4. FINAL PAGE
+    // 4. FINAL PAGE & 3D CAKE INITIALIZATION
+    let threeCakeInitialized = false;
+    let cakeFlameMesh = null;
+    let cakeFlameLight = null;
+    let cakeSmokePuffs = [];
+    let isCakeBlown = false;
+
+    function initThreeCake() {
+      if (threeCakeInitialized || typeof THREE === 'undefined') return;
+      const container = document.getElementById('threeCakeContainer');
+      if (!container) return;
+      threeCakeInitialized = true;
+
+      const w = 380;
+      const h = 380;
+
+      const scene = new THREE.Scene();
+      const camera = new THREE.PerspectiveCamera(38, 1, 0.1, 1000);
+      camera.position.set(0, 1.45, 4.4);
+      camera.lookAt(0, 0.1, 0);
+
+      const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+      renderer.setSize(w, h);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      container.appendChild(renderer.domElement);
+
+      const cakeGroup = new THREE.Group();
+      cakeGroup.position.y = -0.35;
+      scene.add(cakeGroup);
+
+      // Cream texture
+      const cCanvas = document.createElement('canvas');
+      cCanvas.width = 512;
+      cCanvas.height = 256;
+      const cctx = cCanvas.getContext('2d');
+      if (cctx) {
+        cctx.fillStyle = '#ffffff';
+        cctx.fillRect(0, 0, 512, 256);
+        for (let y = 10; y < 256; y += 14) {
+          cctx.strokeStyle = 'rgba(255, 255, 255, 0.7)';
+          cctx.lineWidth = 4;
+          cctx.beginPath();
+          cctx.moveTo(0, y + Math.sin(y) * 4);
+          cctx.bezierCurveTo(128, y - 6, 256, y + 8, 512, y + Math.sin(y) * 4);
+          cctx.stroke();
+        }
+      }
+      const creamTex = new THREE.CanvasTexture(cCanvas);
+
+      const colPri = new THREE.Color(primaryColor);
+      const colSec = new THREE.Color(secondaryColor);
+      const colGold = new THREE.Color('#e2bd77');
+
+      const plateMat = new THREE.MeshStandardMaterial({ color: colGold, metalness: 0.85, roughness: 0.2 });
+      const tier1Mat = new THREE.MeshStandardMaterial({ color: colPri, map: creamTex, roughness: 0.35 });
+      const tier2Mat = new THREE.MeshStandardMaterial({ color: '#fffbf5', map: creamTex, roughness: 0.3 });
+      const tier3Mat = new THREE.MeshStandardMaterial({ color: colSec, map: creamTex, roughness: 0.35 });
+      const ribbonMat = new THREE.MeshStandardMaterial({ color: colGold, metalness: 0.8, roughness: 0.25 });
+      const pearlMat = new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: 0.2 });
+
+      // Stand
+      const stand = new THREE.Mesh(new THREE.CylinderGeometry(1.65, 1.6, 0.08, 64), plateMat);
+      stand.position.y = -0.04;
+      cakeGroup.add(stand);
+
+      // Tier 1
+      const t1H = 0.48;
+      const t1R = 1.38;
+      const t1 = new THREE.Mesh(new THREE.CylinderGeometry(t1R, t1R, t1H, 64), tier1Mat);
+      t1.position.y = t1H / 2;
+      cakeGroup.add(t1);
+
+      const r1 = new THREE.Mesh(new THREE.TorusGeometry(t1R + 0.015, 0.03, 16, 64), ribbonMat);
+      r1.rotation.x = Math.PI / 2;
+      r1.position.y = 0.02;
+      cakeGroup.add(r1);
+
+      // Tier 2
+      const t2H = 0.42;
+      const t2R = 1.02;
+      const t2 = new THREE.Mesh(new THREE.CylinderGeometry(t2R, t2R, t2H, 64), tier2Mat);
+      t2.position.y = t1H + t2H / 2;
+      cakeGroup.add(t2);
+
+      const r2 = new THREE.Mesh(new THREE.TorusGeometry(t2R + 0.015, 0.028, 16, 64), ribbonMat);
+      r2.rotation.x = Math.PI / 2;
+      r2.position.y = t1H + 0.02;
+      cakeGroup.add(r2);
+
+      // Tier 3
+      const t3H = 0.40;
+      const t3R = 0.65;
+      const t3 = new THREE.Mesh(new THREE.CylinderGeometry(t3R, t3R, t3H, 64), tier3Mat);
+      t3.position.y = t1H + t2H + t3H / 2;
+      cakeGroup.add(t3);
+
+      const r3 = new THREE.Mesh(new THREE.TorusGeometry(t3R + 0.012, 0.025, 16, 64), ribbonMat);
+      r3.rotation.x = Math.PI / 2;
+      r3.position.y = t1H + t2H + 0.02;
+      cakeGroup.add(r3);
+
+      // Pearls on top
+      for (let i = 0; i < 18; i++) {
+        const ang = (i / 18) * Math.PI * 2;
+        const p = new THREE.Mesh(new THREE.SphereGeometry(0.04, 12, 12), pearlMat);
+        p.position.set(Math.cos(ang) * (t3R - 0.02), t1H + t2H + t3H, Math.sin(ang) * (t3R - 0.02));
+        cakeGroup.add(p);
+      }
+
+      // Macarons in primary color
+      const macMat = new THREE.MeshStandardMaterial({ color: colPri, roughness: 0.4 });
+      for (let m = 0; m < 5; m++) {
+        const ang = (m / 5) * Math.PI * 2 + 0.3;
+        const mac = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.06, 24), macMat);
+        mac.position.set(Math.cos(ang) * 0.38, t1H + t2H + t3H + 0.04, Math.sin(ang) * 0.38);
+        mac.rotation.x = 0.2;
+        cakeGroup.add(mac);
+      }
+
+      // Candle
+      const candleGroup = new THREE.Group();
+      const baseY = t1H + t2H + t3H;
+      candleGroup.position.set(0, baseY, 0);
+      cakeGroup.add(candleGroup);
+
+      const pillar = new THREE.Mesh(new THREE.CylinderGeometry(0.042, 0.042, 0.42, 24), new THREE.MeshStandardMaterial({ color: '#ffffff' }));
+      pillar.position.y = 0.23;
+      candleGroup.add(pillar);
+
+      const wick = new THREE.Mesh(new THREE.CylinderGeometry(0.005, 0.005, 0.06, 8), new THREE.MeshBasicMaterial({ color: '#27272a' }));
+      wick.position.y = 0.46;
+      candleGroup.add(wick);
+
+      const flGeo = new THREE.ConeGeometry(0.04, 0.16, 16);
+      flGeo.translate(0, 0.08, 0);
+      cakeFlameMesh = new THREE.Mesh(flGeo, new THREE.MeshStandardMaterial({ color: '#ffedd5', emissive: '#f59e0b', emissiveIntensity: 2.4 }));
+      cakeFlameMesh.position.y = 0.48;
+      candleGroup.add(cakeFlameMesh);
+
+      cakeFlameLight = new THREE.PointLight('#fbbf24', 2.0, 4.5);
+      cakeFlameLight.position.y = 0.55;
+      candleGroup.add(cakeFlameLight);
+
+      // Smoke puffs
+      const smGeo = new THREE.SphereGeometry(0.024, 8, 8);
+      const smMat = new THREE.MeshBasicMaterial({ color: '#cbd5e1', transparent: true, opacity: 0.45 });
+      cakeSmokePuffs = [];
+      for (let s = 0; s < 5; s++) {
+        const sm = new THREE.Mesh(smGeo, smMat.clone());
+        sm.visible = false;
+        candleGroup.add(sm);
+        cakeSmokePuffs.push({ mesh: sm, startY: 0.5, life: s * 0.2 });
+      }
+
+      // Lighting
+      const ambLight = new THREE.AmbientLight('#ffffff', 1.0);
+      scene.add(ambLight);
+      const dirLight = new THREE.DirectionalLight('#ffffff', 1.8);
+      dirLight.position.set(3, 6, 4);
+      scene.add(dirLight);
+
+      let mouseX = 0, mouseY = 0;
+      container.addEventListener('mousemove', (e) => {
+        const rect = container.getBoundingClientRect();
+        mouseX = ((e.clientX - (rect.left + rect.width / 2)) / (rect.width / 2)) * 0.5;
+        mouseY = ((e.clientY - (rect.top + rect.height / 2)) / (rect.height / 2)) * 0.3;
+      });
+      container.addEventListener('mouseleave', () => { mouseX = 0; mouseY = 0; });
+
+      let clock = new THREE.Clock();
+      function anim() {
+        requestAnimationFrame(anim);
+        const delta = clock.getDelta();
+        const time = clock.getElapsedTime();
+
+        cakeGroup.rotation.y += (mouseX - cakeGroup.rotation.y + 0.1) * 0.05;
+        cakeGroup.rotation.x += (mouseY - cakeGroup.rotation.x) * 0.05;
+
+        if (!isCakeBlown && cakeFlameMesh) {
+          const s = 1 + Math.sin(time * 12) * 0.08;
+          cakeFlameMesh.scale.set(s, s + Math.cos(time * 15) * 0.1, s);
+          cakeFlameMesh.rotation.z = Math.sin(time * 8) * 0.06;
+          cakeFlameLight.intensity = 2.0 + Math.sin(time * 14) * 0.4;
+        } else {
+          if (cakeFlameMesh) cakeFlameMesh.visible = false;
+          if (cakeFlameLight) cakeFlameLight.intensity = 0;
+          cakeSmokePuffs.forEach(sp => {
+            sp.mesh.visible = true;
+            sp.life += delta * 1.2;
+            if (sp.life > 1) sp.life = 0;
+            sp.mesh.position.y = sp.startY + sp.life * 0.32;
+            sp.mesh.position.x = Math.sin(sp.life * 4) * 0.04;
+            const sc = 0.6 + sp.life * 1.2;
+            sp.mesh.scale.set(sc, sc, sc);
+            sp.mesh.material.opacity = (1 - sp.life) * 0.45;
+          });
+        }
+
+        renderer.render(scene, camera);
+      }
+      anim();
+    }
+
     function goToFinalPage() {
       closeSurpriseModal();
       document.getElementById('lastPageScreen').classList.add('show');
       window.scrollTo({ top: 0, behavior: 'smooth' });
+      initThreeCake();
       fireBurst();
     }
     function closeFinalPage() {
@@ -575,12 +783,7 @@ export function generateStandaloneBirthwishHtml(wish: Birthwish): string {
 
     // 5. BLOW CANDLES
     function blowCandles() {
-      for (let i = 1; i <= 3; i++) {
-        const fl = document.getElementById('cFlame' + i);
-        const sm = document.getElementById('cSmoke' + i);
-        if (fl) fl.style.display = 'none';
-        if (sm) sm.style.display = 'block';
-      }
+      isCakeBlown = true;
       document.getElementById('blowActionBtn').style.display = 'none';
       document.getElementById('wishGrantedMsg').style.display = 'block';
       fireBurst();

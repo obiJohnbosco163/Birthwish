@@ -41,6 +41,7 @@ export interface Birthwish {
   celebrantName: string;
   celebrantNickname?: string;
   celebrantGender: CelebrantGender;
+  celebrantDateOfBirth?: string;
   coverImage: string;
   mainImage: string;
   shortMessage: string;
