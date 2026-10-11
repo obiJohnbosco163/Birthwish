@@ -8,6 +8,7 @@ import { UserOnboardingModal } from './components/UserOnboardingModal';
 import { OAuthConsent } from './components/OAuthConsent';
 import { Birthwish, UserProfile } from './types';
 import { getStoredWishes, getStoredUser, setStoredUser, signOutUser, supabase, saveWish, deleteStoredWish } from './lib/supabase';
+import { onFirebaseAuthStateChanged, signOutFirebase, fetchWishesFromFirestore, deleteWishFromFirestore } from './lib/firebase';
 import { decodeShareableWish } from './lib/wishEncoder';
 import { checkAndNotifyBirthdays } from './lib/notificationService';
 
@@ -80,6 +81,27 @@ export default function App() {
       }
     });
 
+    // Listen to Firebase Auth state
+    const unsubscribeFirebase = onFirebaseAuthStateChanged(async (fbUser) => {
+      if (fbUser) {
+        setUser(fbUser);
+        setCurrentView('dashboard');
+        // Fetch wishes from Firestore
+        const firestoreWishes = await fetchWishesFromFirestore(fbUser.id);
+        if (firestoreWishes.length > 0) {
+          setWishes(prev => {
+            const merged = [...firestoreWishes];
+            prev.forEach(p => {
+              if (!merged.some(m => m.id === p.id)) {
+                merged.push(p);
+              }
+            });
+            return merged;
+          });
+        }
+      }
+    });
+
     // Check pathname or hash for OAuth Consent or direct wish view
     const handleLocationChange = () => {
       const pathname = window.location.pathname.toLowerCase();
@@ -129,6 +151,7 @@ export default function App() {
     return () => {
       window.removeEventListener('hashchange', handleLocationChange);
       window.removeEventListener('popstate', handleLocationChange);
+      unsubscribeFirebase();
     };
   }, []);
 
@@ -178,6 +201,9 @@ export default function App() {
   };
 
   const handleSignOut = async () => {
+    try {
+      await signOutFirebase();
+    } catch {}
     await signOutUser();
     setUser(null);
     setStoredUser(null);
@@ -238,6 +264,9 @@ export default function App() {
   };
 
   const handleDeleteWish = async (wishId: string) => {
+    try {
+      await deleteWishFromFirestore(wishId);
+    } catch {}
     await deleteStoredWish(wishId);
     setWishes((prev) => prev.filter((w) => w.id !== wishId));
     if (activeWish?.id === wishId) {

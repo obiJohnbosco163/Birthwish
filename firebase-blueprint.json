@@ -1,0 +1,58 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User account profile for authentication and preferences",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "email": { "type": "string" },
+        "name": { "type": "string" },
+        "photoURL": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "email"]
+    },
+    "Birthwish": {
+      "title": "Birthwish",
+      "description": "Digital birthday tribute journey with personal epistle and gift holding",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "category": { "type": "string" },
+        "customCategory": { "type": "string" },
+        "colorTheme": { "type": "string" },
+        "celebrantName": { "type": "string" },
+        "celebrantNickname": { "type": "string" },
+        "celebrantGender": { "type": "string", "enum": ["female", "male", "other"] },
+        "celebrantDateOfBirth": { "type": "string" },
+        "coverImage": { "type": "string" },
+        "mainImage": { "type": "string" },
+        "shortMessage": { "type": "string" },
+        "finalEpistle": { "type": "string" },
+        "senderRelation": { "type": "string" },
+        "senderName": { "type": "string" },
+        "hasGift": { "type": "boolean" },
+        "giftAmount": { "type": "number" },
+        "giftCurrency": { "type": "string" },
+        "giftPasscode": { "type": "string" },
+        "giftStatus": { "type": "string", "enum": ["unfunded", "holding", "claimed"] },
+        "giftClaimedAt": { "type": "string" },
+        "koraPaymentReference": { "type": "string" }
+      },
+      "required": ["id", "userId", "celebrantName", "shortMessage", "colorTheme", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "Stores user account profile information"
+    },
+    "/birthwishes/{wishId}": {
+      "schema": "Birthwish",
+      "description": "Public and creator-managed birthwish documents"
+    }
+  }
+}

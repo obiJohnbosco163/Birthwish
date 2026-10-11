@@ -63,6 +63,8 @@ export interface UserProfile {
   email: string;
   name?: string;
   avatarUrl?: string;
+  photoURL?: string;
+  phoneNumber?: string;
 }
 
 export interface RainbowColorConfig {

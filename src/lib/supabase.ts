@@ -1,6 +1,7 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { Birthwish, UserProfile } from '../types';
 import { compressImageDataUrl } from './imageCompressor';
+import { saveWishToFirestore } from './firebase';
 
 /**
  * 1. Supabase Client Setup
@@ -367,6 +368,10 @@ export const updateWishClaim = async (
   target.claimDetails = claimDetails;
 
   setSafeWishesStorage(wishes);
+
+  try {
+    await saveWishToFirestore(target);
+  } catch {}
 
   try {
     await supabase

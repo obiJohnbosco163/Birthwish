@@ -9,6 +9,7 @@ import {
 import { RAINBOW_COLORS } from '../lib/colors';
 import { initializeKoraHoldingPayment, KORA_CONFIG } from '../lib/kora';
 import { saveWish } from '../lib/supabase';
+import { saveWishToFirestore } from '../lib/firebase';
 import { generateStandaloneBirthwishHtml } from '../lib/htmlExporter';
 import { generateShareableWishLink } from '../lib/wishEncoder';
 import { compressImageDataUrl } from '../lib/imageCompressor';
@@ -239,6 +240,9 @@ export const CreateWishWizard: React.FC<CreateWishWizardProps> = ({
     };
 
     const saved = await saveWish(newWish);
+    try {
+      await saveWishToFirestore(saved);
+    } catch {}
     setCreatedWish(saved);
     onWishCreated(saved);
     setStep(5);

@@ -866,29 +866,95 @@ export const Dashboard: React.FC<DashboardProps> = ({
                       </p>
                     </div>
 
-                    {/* Dynamic Countdown Progress Bar */}
-                    <div className={`p-2.5 rounded-xl border flex items-center justify-between text-xs ${
+                    {/* High-Impact Visual Countdown Timer Display */}
+                    <div className={`p-3 rounded-2xl border transition-all ${
                       countdown.isToday
-                        ? 'bg-rose-500/10 border-rose-500/30 text-rose-400'
+                        ? 'bg-gradient-to-r from-rose-500/20 via-pink-500/15 to-amber-500/10 border-rose-500/40 text-rose-300 shadow-md shadow-rose-500/10'
+                        : countdown.isTomorrow
+                        ? 'bg-gradient-to-r from-amber-500/20 to-orange-500/10 border-amber-500/40 text-amber-300 shadow-md shadow-amber-500/10'
                         : countdown.daysRemaining <= 7
-                        ? 'bg-amber-500/10 border-amber-500/30 text-amber-400'
+                        ? isLight ? 'bg-purple-50 border-purple-200 text-purple-700' : 'bg-purple-950/25 border-purple-500/30 text-purple-300'
                         : isLight
-                        ? 'bg-slate-50 border-slate-200/80 text-slate-600'
+                        ? 'bg-slate-50 border-slate-200/90 text-slate-700'
                         : 'bg-white/[0.03] border-white/10 text-slate-300'
                     }`}>
-                      <div className="flex items-center gap-2">
-                        <Calendar className="w-3.5 h-3.5 shrink-0" />
-                        <span className="font-semibold text-[11px]">
-                          {countdown.isToday 
-                            ? "Celebration is Happening Today!" 
-                            : countdown.isTomorrow 
-                            ? "Celebration is Tomorrow!" 
-                            : `Next Birthday in ${countdown.daysRemaining} days`}
-                        </span>
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <span className={`p-1.5 rounded-lg flex items-center justify-center ${
+                            countdown.isToday
+                              ? 'bg-rose-500 text-white animate-bounce'
+                              : countdown.isTomorrow
+                              ? 'bg-amber-500 text-slate-950'
+                              : countdown.daysRemaining <= 7
+                              ? 'bg-purple-500/20 text-purple-400'
+                              : isLight ? 'bg-slate-200 text-slate-600' : 'bg-white/10 text-slate-400'
+                          }`}>
+                            <Clock className="w-3.5 h-3.5" />
+                          </span>
+                          <div>
+                            <span className="text-[10px] font-mono-tech uppercase tracking-wider block opacity-75">
+                              Countdown Timer
+                            </span>
+                            <span className="text-xs font-bold font-display">
+                              {countdown.isToday
+                                ? "🎉 It's Celebration Day!"
+                                : countdown.isTomorrow
+                                ? "🎂 Tomorrow is the Day!"
+                                : `${countdown.daysRemaining} days remaining`}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Numeric Countdown Digit Box */}
+                        <div className={`px-2.5 py-1 rounded-xl text-center border font-mono ${
+                          countdown.isToday
+                            ? 'bg-rose-500/30 border-rose-400/50 text-white font-extrabold animate-pulse'
+                            : countdown.isTomorrow
+                            ? 'bg-amber-500/30 border-amber-400/50 text-amber-300 font-bold'
+                            : isLight
+                            ? 'bg-white border-slate-200 text-slate-900 shadow-xs'
+                            : 'bg-black/40 border-white/10 text-white'
+                        }`}>
+                          <div className="text-base font-black leading-none">
+                            {countdown.daysRemaining}
+                          </div>
+                          <div className="text-[9px] uppercase tracking-wider opacity-70">
+                            {countdown.daysRemaining === 1 ? 'day' : 'days'}
+                          </div>
+                        </div>
                       </div>
-                      <span className="font-mono text-[10px] font-bold uppercase tracking-wider">
-                        {countdown.formattedTargetDate}
-                      </span>
+
+                      {/* Visual Countdown Progress Fill Bar */}
+                      <div className="space-y-1">
+                        <div className={`h-1.5 w-full rounded-full overflow-hidden ${
+                          isLight ? 'bg-slate-200' : 'bg-white/10'
+                        }`}>
+                          <div 
+                            className={`h-full rounded-full transition-all duration-500 ${
+                              countdown.isToday
+                                ? 'bg-gradient-to-r from-rose-500 to-pink-500 w-full animate-pulse'
+                                : countdown.isTomorrow
+                                ? 'bg-gradient-to-r from-amber-400 to-orange-500 w-[96%]'
+                                : countdown.daysRemaining <= 7
+                                ? 'bg-gradient-to-r from-purple-500 to-pink-500'
+                                : 'bg-gradient-to-r from-pink-500 to-rose-400'
+                            }`}
+                            style={{
+                              width: countdown.isToday 
+                                ? '100%' 
+                                : `${Math.max(6, Math.min(100, Math.round(((365 - countdown.daysRemaining) / 365) * 100)))}%`
+                            }}
+                          />
+                        </div>
+                        <div className="flex items-center justify-between text-[10px] opacity-75 font-mono">
+                          <span>Target: {countdown.formattedTargetDate}</span>
+                          <span>
+                            {countdown.isToday 
+                              ? '100% arrived' 
+                              : `${Math.round(((365 - countdown.daysRemaining) / 365) * 100)}% cycle`}
+                          </span>
+                        </div>
+                      </div>
                     </div>
 
                     <p className={`text-xs line-clamp-2 leading-relaxed ${
