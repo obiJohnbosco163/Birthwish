@@ -9,6 +9,8 @@ import { happyBirthdayAudio } from '../lib/happyBirthdayAudio';
 import { CelebrantFireworksIntro } from './CelebrantFireworksIntro';
 import { CelebrantSurpriseModal } from './CelebrantSurpriseModal';
 import { CelebrantLastPage } from './CelebrantLastPage';
+import { PaymentModal } from './PaymentModal';
+import { PayoutModal } from './PayoutModal';
 import confetti from 'canvas-confetti';
 import { 
   ArrowLeft, 
@@ -20,7 +22,9 @@ import {
   Sparkles,
   ExternalLink,
   Crown,
-  Printer
+  Printer,
+  CreditCard,
+  Gift
 } from 'lucide-react';
 
 interface CelebrantViewProps {
@@ -58,6 +62,7 @@ export const CelebrantView: React.FC<CelebrantViewProps> = ({
   );
 
   const [isClaimModalOpen, setIsClaimModalOpen] = useState<boolean>(false);
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState<boolean>(false);
   const [passcode, setPasscode] = useState<string>('');
   const [selectedBankCode, setSelectedBankCode] = useState<string>(POPULAR_BANKS[1].code);
   const [accountNumber, setAccountNumber] = useState<string>('');
@@ -369,6 +374,16 @@ export const CelebrantView: React.FC<CelebrantViewProps> = ({
               </button>
             )}
 
+            {/* Send Cash Gift via Kora Button */}
+            <button
+              onClick={() => setIsPaymentModalOpen(true)}
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-mono-tech border border-emerald-500/40 bg-emerald-500/10 hover:bg-emerald-500/25 text-emerald-300 transition-all cursor-pointer shadow-sm active:scale-95"
+              title="Send a cash gift to the celebrant via Kora"
+            >
+              <CreditCard className="w-3.5 h-3.5 text-emerald-400" />
+              <span className="hidden sm:inline">Send Gift</span>
+            </button>
+
             {/* Share Viewing Link */}
             <button
               onClick={handleShare}
@@ -495,8 +510,8 @@ export const CelebrantView: React.FC<CelebrantViewProps> = ({
           </p>
         </div>
 
-        {/* NEON "LET'S CELEBRATE" BUTTON (Exact style and pulsing glow in user's color) */}
-        <div className="pt-4">
+        {/* NEON "LET'S CELEBRATE" BUTTON & "SEND CASH GIFT" BUTTONS */}
+        <div className="pt-4 flex flex-col sm:flex-row items-center justify-center gap-3">
           <button
             onClick={() => setIsSurpriseModalOpen(true)}
             className="cursor-pointer text-white uppercase tracking-wider rounded-full px-10 py-3.5 sm:py-4 font-orbitron font-extrabold text-base sm:text-lg transition-all transform hover:scale-105 active:scale-95 shadow-2xl"
@@ -508,6 +523,14 @@ export const CelebrantView: React.FC<CelebrantViewProps> = ({
             }}
           >
             Let&apos;s Celebrate
+          </button>
+
+          <button
+            onClick={() => setIsPaymentModalOpen(true)}
+            className="cursor-pointer text-white uppercase tracking-wider rounded-full px-7 py-3.5 sm:py-4 font-orbitron font-bold text-xs sm:text-sm transition-all transform hover:scale-105 active:scale-95 shadow-xl bg-emerald-600/80 hover:bg-emerald-500 border border-emerald-400/50 flex items-center gap-2"
+          >
+            <Gift className="w-4 h-4 text-amber-300" />
+            <span>Send Cash Gift</span>
           </button>
         </div>
       </main>
@@ -545,109 +568,41 @@ export const CelebrantView: React.FC<CelebrantViewProps> = ({
         />
       )}
 
-      {/* 5. CLAIM CASH GIFT MODAL DIALOG */}
-      {isClaimModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in">
-          <div className="w-full max-w-md bg-[#0b1226] border border-emerald-500/40 rounded-3xl p-6 sm:p-8 text-left shadow-2xl relative">
-            <button
-              onClick={() => setIsClaimModalOpen(false)}
-              className="absolute top-4 right-4 text-slate-400 hover:text-white p-2 rounded-full hover:bg-white/10"
-            >
-              ✕
-            </button>
+      {/* 5. PAYOUT MODAL (Disburses funds via Kora Payout Engine with Bank or Mobile Money) */}
+      <PayoutModal
+        isOpen={isClaimModalOpen}
+        onClose={() => setIsClaimModalOpen(false)}
+        wish={wish}
+        themePrimaryColor={theme.primary}
+        themeSecondaryColor={theme.secondary}
+        onPayoutSuccess={(updated) => {
+          if (onUpdateWish) {
+            onUpdateWish(updated);
+          }
+        }}
+      />
 
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-2xl border border-emerald-500/30">
-                🎁
-              </div>
-              <div>
-                <h3 className="font-display font-extrabold text-white text-lg">
-                  Claim Birthday Gift
-                </h3>
-                <p className="text-xs text-emerald-400 font-semibold">
-                  ₦{wish.giftAmount?.toLocaleString()} {wish.giftCurrency}
-                </p>
-              </div>
-            </div>
-
-            {claimSuccessResult ? (
-              <div className="p-4 rounded-2xl bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 text-xs space-y-2">
-                <p className="font-bold text-sm">🎉 Payout Disbursed Successfully!</p>
-                <p>Transfer reference: <span className="font-mono">{claimSuccessResult.reference}</span></p>
-                <p>Beneficiary: <b>{claimSuccessResult.accountName}</b> ({claimSuccessResult.bankName})</p>
-              </div>
-            ) : (
-              <form onSubmit={handleClaimFunds} className="space-y-4 text-xs">
-                {claimError && (
-                  <div className="p-3 rounded-xl bg-rose-500/20 border border-rose-500/40 text-rose-300">
-                    {claimError}
-                  </div>
-                )}
-
-                <div>
-                  <label className="block text-slate-300 font-semibold mb-1">
-                    Secret Passcode (from {wish.senderName})
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={passcode}
-                    onChange={(e) => setPasscode(e.target.value)}
-                    placeholder="Enter Secret Passcode"
-                    className="w-full px-3.5 py-2.5 bg-slate-900 border border-white/20 rounded-xl text-white font-mono uppercase focus:outline-none focus:border-emerald-400"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-slate-300 font-semibold mb-1">
-                    Select Bank
-                  </label>
-                  <select
-                    value={selectedBankCode}
-                    onChange={(e) => setSelectedBankCode(e.target.value)}
-                    className="w-full px-3.5 py-2.5 bg-slate-900 border border-white/20 rounded-xl text-white focus:outline-none focus:border-emerald-400"
-                  >
-                    {POPULAR_BANKS.map((b) => (
-                      <option key={b.code} value={b.code}>
-                        {b.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-slate-300 font-semibold mb-1">
-                    10-Digit Account Number
-                  </label>
-                  <input
-                    type="text"
-                    maxLength={10}
-                    required
-                    value={accountNumber}
-                    onChange={handleAccountChange}
-                    placeholder="e.g. 0123456789"
-                    className="w-full px-3.5 py-2.5 bg-slate-900 border border-white/20 rounded-xl text-white font-mono focus:outline-none focus:border-emerald-400"
-                  />
-                  {isResolvingName && (
-                    <p className="text-[11px] text-amber-400 mt-1 animate-pulse">Resolving Account Name...</p>
-                  )}
-                  {accountName && !isResolvingName && (
-                    <p className="text-[11px] text-emerald-400 mt-1 font-semibold">✓ {accountName}</p>
-                  )}
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={isClaiming}
-                  className="w-full py-3 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-sm shadow-lg shadow-emerald-500/25 transition-all cursor-pointer disabled:opacity-60 flex items-center justify-center gap-2"
-                >
-                  {isClaiming ? 'Processing Transfer...' : `Disburse ₦${wish.giftAmount?.toLocaleString()} Now`}
-                </button>
-              </form>
-            )}
-          </div>
-        </div>
-      )}
+      {/* 6. KORA PAYMENT INITIALIZATION MODAL (Generates checkout URL via initialize_payment) */}
+      <PaymentModal
+        isOpen={isPaymentModalOpen}
+        onClose={() => setIsPaymentModalOpen(false)}
+        wish={wish}
+        themePrimaryColor={theme.primary}
+        themeSecondaryColor={theme.secondary}
+        onPaymentSuccess={(res) => {
+          triggerConfetti();
+          if (onUpdateWish) {
+            onUpdateWish({
+              ...wish,
+              hasGift: true,
+              giftAmount: res.amount,
+              giftCurrency: res.currency,
+              giftStatus: 'holding',
+              koraPaymentReference: res.reference,
+            });
+          }
+        }}
+      />
 
       {/* Floating Download Toast */}
       {downloadNotice && (
