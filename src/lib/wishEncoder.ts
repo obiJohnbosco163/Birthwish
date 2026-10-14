@@ -118,3 +118,17 @@ export const decodeShareableWish = (hash: string): { wishId: string | null; enco
 
   return { wishId: null, encodedWish: null };
 };
+
+/**
+ * Generate formatted text and direct WhatsApp share URL for a Birthwish
+ */
+export const generateWhatsAppShareMessage = (wish: Birthwish): string => {
+  const link = generateShareableWishLink(wish);
+  const nickname = wish.celebrantNickname ? ` ("${wish.celebrantNickname}")` : '';
+  return `🎂 You've received a special Birthwish celebration for ${wish.celebrantName}${nickname}! ✨\n\nOpen to celebrate: ${link}`;
+};
+
+export const generateWhatsAppShareUrl = (wish: Birthwish): string => {
+  const message = generateWhatsAppShareMessage(wish);
+  return `https://api.whatsapp.com/send?text=${encodeURIComponent(message)}`;
+};

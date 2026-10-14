@@ -2,8 +2,9 @@ import React, { useState } from 'react';
 import { Birthwish, UserProfile } from '../types';
 import { RAINBOW_COLORS } from '../lib/colors';
 import { generateStandaloneBirthwishHtml } from '../lib/htmlExporter';
-import { generateShareableWishLink } from '../lib/wishEncoder';
+import { generateShareableWishLink, generateWhatsAppShareUrl } from '../lib/wishEncoder';
 import { calculateDaysUntilBirthday } from '../lib/dateUtils';
+import { WhatsAppIcon } from './WhatsAppIcon';
 import {
   ResponsiveContainer,
   BarChart,
@@ -50,13 +51,18 @@ import {
   BellRing,
   BarChart3,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  Crown,
+  Zap,
+  Lock
 } from 'lucide-react';
+import { getUserQuota } from '../lib/subscription';
 
 interface DashboardProps {
   user: UserProfile | null;
   wishes: Birthwish[];
   onCreateClick: () => void;
+  onUpgradeClick?: () => void;
   onViewWish: (wish: Birthwish) => void;
   onDeleteWish?: (wishId: string) => void;
   theme?: 'dark' | 'light';
@@ -67,6 +73,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   user,
   wishes,
   onCreateClick,
+  onUpgradeClick,
   onViewWish,
   onDeleteWish,
   theme = 'light',
@@ -84,6 +91,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
   // Filter strictly to only birthwishes created by this logged in user
   const userWishes = user ? wishes.filter(w => w.userId === user.id) : [];
+
+  // Subscription Quota status (Powered by Kora Engine)
+  const quota = getUserQuota(user, wishes);
 
   // Compute strictly REAL metrics from wishes actually created by this user
   const totalWishes = userWishes.length;
@@ -282,7 +292,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
               isLight ? 'bg-pink-50 text-pink-600 border-pink-200' : 'bg-pink-500/10 text-pink-300 border-pink-500/25'
             }`}>
               <Sparkles className="w-3.5 h-3.5 text-pink-500" />
-              <span className="font-editorial text-sm font-semibold tracking-wider uppercase">Birthwish Atelier</span>
+              <span className="font-editorial text-sm font-semibold tracking-wider uppercase">Birthwish</span>
               <span className="font-signature text-pink-500 text-lg">with love</span>
             </div>
             <h1 className={`font-haute text-3xl sm:text-4xl font-extrabold tracking-tight ${
@@ -350,6 +360,105 @@ export const Dashboard: React.FC<DashboardProps> = ({
           </div>
         </div>
 
+        {/* ================= KORA-INSPIRED SUBSCRIPTION STATUS BANNER ================= */}
+        {quota.isFounder ? (
+          <div className="mt-6 p-4 rounded-2xl bg-gradient-to-r from-amber-500/15 via-pink-500/10 to-amber-500/15 border border-amber-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs shadow-lg">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-300 flex items-center justify-center shrink-0 border border-amber-500/30">
+                <Crown className="w-5 h-5 text-amber-400" />
+              </div>
+              <div>
+                <p className="font-bold text-sm text-white flex items-center gap-2">
+                  <span>Founder &amp; Creator Privileges Active</span>
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-amber-400/20 text-amber-300 font-bold uppercase tracking-wider">
+                    Lifetime Unlimited
+                  </span>
+                </p>
+                <p className="text-slate-300 text-xs mt-0.5">
+                  Admin account (<span className="font-mono text-white underline">{user?.email}</span>) enjoys permanent unrestricted creation access across all Birthwish features.
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <span className="px-3 py-1 rounded-full bg-black/40 border border-amber-400/30 text-[11px] font-mono text-amber-300 font-bold">
+                ∞ Unlimited Wishes
+              </span>
+            </div>
+          </div>
+        ) : quota.isPremium ? (
+          <div className="mt-6 p-4 rounded-2xl bg-gradient-to-r from-pink-500/15 via-rose-500/10 to-amber-500/15 border border-pink-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs shadow-lg">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-pink-500/20 text-pink-300 flex items-center justify-center shrink-0 border border-pink-500/30">
+                <Crown className="w-5 h-5 text-pink-400" />
+              </div>
+              <div>
+                <p className="font-bold text-sm text-white flex items-center gap-2">
+                  <span>Birthwish Premium Subscription Active</span>
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-bold uppercase tracking-wider">
+                    Unlimited Active
+                  </span>
+                </p>
+                <p className="text-slate-300 text-xs mt-0.5">
+                  You have unlimited Birthwish creations enabled for the next {quota.daysRemaining} days (Powered by Kora Payment Rail).
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <span className="px-3 py-1 rounded-full bg-black/40 border border-pink-400/30 text-[11px] font-mono text-pink-300 font-bold">
+                {quota.daysRemaining} Days Left
+              </span>
+            </div>
+          </div>
+        ) : (
+          <div className={`mt-6 p-4 rounded-2xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs transition-all ${
+            quota.hasReachedLimit 
+              ? 'bg-rose-500/10 border-rose-500/30 text-rose-200 shadow-lg shadow-rose-500/5' 
+              : isLight ? 'bg-white border-slate-200 text-slate-700 shadow-sm' : 'bg-slate-900/60 border-white/10 text-slate-300'
+          }`}>
+            <div className="flex items-center gap-3">
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border ${
+                quota.hasReachedLimit 
+                  ? 'bg-rose-500/20 border-rose-500/30 text-rose-400' 
+                  : 'bg-pink-500/10 border-pink-500/20 text-pink-500'
+              }`}>
+                {quota.hasReachedLimit ? <Lock className="w-5 h-5" /> : <Gift className="w-5 h-5" />}
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <p className={`font-bold text-sm ${isLight && !quota.hasReachedLimit ? 'text-slate-900' : 'text-white'}`}>
+                    {quota.hasReachedLimit 
+                      ? "You've Run Out of Free Lucky Birthwishes" 
+                      : `Free Plan: ${quota.usedCount} of ${quota.maxLimit} Lucky Wishes Created`}
+                  </p>
+                  <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full uppercase font-bold ${
+                    quota.hasReachedLimit 
+                      ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40' 
+                      : 'bg-pink-500/10 text-pink-500 border border-pink-500/20'
+                  }`}>
+                    {quota.hasReachedLimit ? 'Quota Reached' : `${quota.remainingCount} Left`}
+                  </span>
+                </div>
+                <p className={`text-xs mt-0.5 ${isLight && !quota.hasReachedLimit ? 'text-slate-600' : 'text-slate-300'}`}>
+                  {quota.hasReachedLimit 
+                    ? 'You have created your 3 complimentary lucky Birthwishes. Subscribe to Premium via Kora to continue crafting tributes.'
+                    : 'Each user gets 3 free birthwishes. Upgrade to Premium for 1 month of unlimited celebrations.'}
+                </p>
+              </div>
+            </div>
+
+            {onUpgradeClick && (
+              <button
+                type="button"
+                onClick={onUpgradeClick}
+                className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer shadow-lg shadow-pink-500/25 shrink-0 transition-transform active:scale-95"
+              >
+                <Zap className="w-3.5 h-3.5 text-amber-300" />
+                <span>{quota.hasReachedLimit ? 'Subscribe to Premium' : 'Upgrade to Unlimited'}</span>
+              </button>
+            )}
+          </div>
+        )}
+
         {/* Real Metrics Row (Strictly what the user actually did, starts at 0 if no wishes) */}
         <div className={`grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5 mt-8 pt-8 border-t ${
           isLight ? 'border-slate-200' : 'border-white/10'
@@ -407,13 +516,16 @@ export const Dashboard: React.FC<DashboardProps> = ({
             <div className={`flex items-center justify-between text-xs font-medium mb-1 ${
               isLight ? 'text-slate-500' : 'text-slate-400'
             }`}>
-              <span>Total Cash Gifted</span>
+              <div className="flex items-center gap-1.5">
+                <span>Cash Gift Vault</span>
+                <span className="text-[9px] uppercase px-1.5 py-0.2 rounded-full bg-amber-500/15 text-amber-500 font-bold font-mono border border-amber-500/25">Soon</span>
+              </div>
               <TrendingUp className="w-4 h-4 text-emerald-500" />
             </div>
             <p className="font-display text-2xl font-extrabold text-emerald-500">
               ₦{totalGiftAmount.toLocaleString()}
             </p>
-            <span className="text-[11px] text-emerald-600 font-semibold">User disbursements</span>
+            <span className="text-[11px] text-emerald-600 font-semibold">Kora Gateway Preview</span>
           </div>
 
           <div className={`p-4 rounded-2xl border ${
@@ -652,6 +764,17 @@ export const Dashboard: React.FC<DashboardProps> = ({
             </div>
 
             <div className="flex items-center gap-2 shrink-0">
+              <a
+                href={generateWhatsAppShareUrl(nearestBirthday.wish)}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                className="px-3 py-1.5 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold inline-flex items-center gap-1.5 shadow-sm transition-transform active:scale-95 cursor-pointer"
+                title="Share birthday celebration on WhatsApp"
+              >
+                <WhatsAppIcon className="w-3.5 h-3.5 fill-current" />
+                <span className="hidden xs:inline">WhatsApp</span>
+              </a>
               <button
                 type="button"
                 onClick={(e) => handleNativeShare(e, nearestBirthday.wish)}
@@ -970,6 +1093,19 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   isLight ? 'border-slate-100 bg-slate-50 text-slate-500' : 'border-white/5 bg-black/20 text-slate-400'
                 }`}>
                   <div className="flex items-center gap-1.5">
+                    {/* Share directly to WhatsApp */}
+                    <a
+                      href={generateWhatsAppShareUrl(wish)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={`p-2 rounded-full transition-colors cursor-pointer ${
+                        isLight ? 'hover:bg-emerald-100 text-emerald-600' : 'hover:bg-emerald-500/20 text-emerald-400'
+                      }`}
+                      title="Share directly to WhatsApp"
+                    >
+                      <WhatsAppIcon className="w-3.5 h-3.5 fill-current" />
+                    </a>
+
                     {/* Native Web Share Button (Shares directly to WhatsApp, Telegram, X, iMessage, etc.) */}
                     <button
                       onClick={(e) => handleNativeShare(e, wish)}

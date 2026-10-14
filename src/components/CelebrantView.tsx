@@ -4,13 +4,14 @@ import { RAINBOW_COLORS } from '../lib/colors';
 import { POPULAR_BANKS, resolveBankAccount, claimFundsFromHolding } from '../lib/kora';
 import { updateWishClaim } from '../lib/supabase';
 import { generateStandaloneBirthwishHtml } from '../lib/htmlExporter';
-import { generateShareableWishLink } from '../lib/wishEncoder';
+import { generateShareableWishLink, generateWhatsAppShareUrl } from '../lib/wishEncoder';
 import { happyBirthdayAudio } from '../lib/happyBirthdayAudio';
 import { CelebrantFireworksIntro } from './CelebrantFireworksIntro';
 import { CelebrantSurpriseModal } from './CelebrantSurpriseModal';
 import { CelebrantLastPage } from './CelebrantLastPage';
 import { PaymentModal } from './PaymentModal';
 import { PayoutModal } from './PayoutModal';
+import { WhatsAppIcon } from './WhatsAppIcon';
 import confetti from 'canvas-confetti';
 import { 
   ArrowLeft, 
@@ -192,6 +193,8 @@ export const CelebrantView: React.FC<CelebrantViewProps> = ({
     setTimeout(() => setCopyFeedback(false), 2500);
   };
 
+  const whatsappShareUrl = generateWhatsAppShareUrl(wish);
+
   // Bank resolution
   const handleAccountChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value.replace(/\D/g, '').slice(0, 10);
@@ -367,22 +370,38 @@ export const CelebrantView: React.FC<CelebrantViewProps> = ({
             {hasPaymentStatus && (
               <button
                 onClick={() => setIsClaimModalOpen(true)}
-                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold bg-emerald-500 hover:bg-emerald-400 text-white shadow-md shadow-emerald-500/30 transition-transform active:scale-95 cursor-pointer"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-emerald-500/80 hover:bg-emerald-500 text-white shadow-md shadow-emerald-500/30 transition-transform active:scale-95 cursor-pointer"
+                title="Cash Gift Vault (Feature Preview)"
               >
-                <ShieldCheck className="w-3.5 h-3.5" />
+                <ShieldCheck className="w-3.5 h-3.5 text-amber-300" />
                 <span>₦{wish.giftAmount?.toLocaleString()}</span>
+                <span className="text-[9px] uppercase px-1.5 py-0.5 rounded-full bg-black/30 text-amber-200 font-bold font-mono">Soon</span>
               </button>
             )}
 
-            {/* Send Cash Gift via Kora Button */}
+            {/* Send Cash Gift via Kora (Coming Soon) Button */}
             <button
               onClick={() => setIsPaymentModalOpen(true)}
-              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-mono-tech border border-emerald-500/40 bg-emerald-500/10 hover:bg-emerald-500/25 text-emerald-300 transition-all cursor-pointer shadow-sm active:scale-95"
-              title="Send a cash gift to the celebrant via Kora"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-mono-tech border border-amber-500/40 bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 transition-all cursor-pointer shadow-sm active:scale-95"
+              title="Birthday Cash Gift powered by Kora (Coming Soon)"
             >
-              <CreditCard className="w-3.5 h-3.5 text-emerald-400" />
-              <span className="hidden sm:inline">Send Gift</span>
+              <Gift className="w-3.5 h-3.5 text-amber-400" />
+              <span className="hidden sm:inline">Cash Gift</span>
+              <span className="text-[9px] uppercase px-1.5 py-0.5 rounded-full bg-amber-400/20 text-amber-300 font-bold font-mono">Soon</span>
             </button>
+
+            {/* Share to WhatsApp */}
+            <a
+              href={whatsappShareUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-mono-tech border border-emerald-500/40 bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 transition-all cursor-pointer shadow-sm active:scale-95"
+              title="Share this tribute directly to WhatsApp"
+            >
+              <WhatsAppIcon className="w-3.5 h-3.5 fill-current text-emerald-400" />
+              <span className="hidden sm:inline">Share to WhatsApp</span>
+              <span className="sm:hidden">WhatsApp</span>
+            </a>
 
             {/* Share Viewing Link */}
             <button
@@ -391,7 +410,7 @@ export const CelebrantView: React.FC<CelebrantViewProps> = ({
               title="Copy shareable viewing link for this tribute"
             >
               <Share2 className="w-3.5 h-3.5" />
-              <span>{copyFeedback ? 'Link Copied!' : 'Share Link'}</span>
+              <span>{copyFeedback ? 'Link Copied!' : 'Copy Link'}</span>
             </button>
 
             {/* Download .HTML */}
@@ -510,11 +529,11 @@ export const CelebrantView: React.FC<CelebrantViewProps> = ({
           </p>
         </div>
 
-        {/* NEON "LET'S CELEBRATE" BUTTON & "SEND CASH GIFT" BUTTONS */}
+        {/* NEON "LET'S CELEBRATE", "SHARE TO WHATSAPP" & "SEND CASH GIFT" BUTTONS */}
         <div className="pt-4 flex flex-col sm:flex-row items-center justify-center gap-3">
           <button
             onClick={() => setIsSurpriseModalOpen(true)}
-            className="cursor-pointer text-white uppercase tracking-wider rounded-full px-10 py-3.5 sm:py-4 font-orbitron font-extrabold text-base sm:text-lg transition-all transform hover:scale-105 active:scale-95 shadow-2xl"
+            className="w-full sm:w-auto cursor-pointer text-white uppercase tracking-wider rounded-full px-8 py-3.5 sm:py-4 font-orbitron font-extrabold text-sm sm:text-base transition-all transform hover:scale-105 active:scale-95 shadow-2xl"
             style={{
               background: `linear-gradient(135deg, rgba(14, 21, 44, 0.95), ${theme.primary}50)`,
               border: `3px solid ${theme.primary}`,
@@ -525,12 +544,25 @@ export const CelebrantView: React.FC<CelebrantViewProps> = ({
             Let&apos;s Celebrate
           </button>
 
+          {/* Share to WhatsApp Button */}
+          <a
+            href={whatsappShareUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-full sm:w-auto cursor-pointer text-white uppercase tracking-wider rounded-full px-6 py-3.5 sm:py-4 font-orbitron font-bold text-xs sm:text-sm transition-all transform hover:scale-105 active:scale-95 shadow-xl bg-gradient-to-r from-emerald-600 via-emerald-500 to-green-600 hover:from-emerald-500 hover:to-green-500 border border-emerald-400/50 flex items-center justify-center gap-2"
+            title="Share this Birthwish tribute directly to WhatsApp"
+          >
+            <WhatsAppIcon className="w-4 h-4 fill-current text-white" />
+            <span>Share to WhatsApp</span>
+          </a>
+
           <button
             onClick={() => setIsPaymentModalOpen(true)}
-            className="cursor-pointer text-white uppercase tracking-wider rounded-full px-7 py-3.5 sm:py-4 font-orbitron font-bold text-xs sm:text-sm transition-all transform hover:scale-105 active:scale-95 shadow-xl bg-emerald-600/80 hover:bg-emerald-500 border border-emerald-400/50 flex items-center gap-2"
+            className="w-full sm:w-auto cursor-pointer text-white uppercase tracking-wider rounded-full px-6 py-3.5 sm:py-4 font-orbitron font-bold text-xs sm:text-sm transition-all transform hover:scale-105 active:scale-95 shadow-xl bg-gradient-to-r from-amber-600/80 to-rose-600/80 hover:from-amber-500 hover:to-rose-500 border border-amber-400/40 flex items-center justify-center gap-2"
           >
             <Gift className="w-4 h-4 text-amber-300" />
             <span>Send Cash Gift</span>
+            <span className="px-2 py-0.5 rounded-full bg-black/40 text-[10px] text-amber-200 border border-amber-400/30">Coming Soon</span>
           </button>
         </div>
       </main>

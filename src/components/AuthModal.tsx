@@ -91,12 +91,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onAuthSuc
           <div className="flex justify-center mb-3">
             <BirthwishLogo size="lg" />
           </div>
-          <div className="flex items-center justify-center gap-2">
-            <h2 className="font-haute text-3xl font-bold text-white tracking-tight">
-              {isSignUp ? 'Join Birthwish' : 'Welcome Back'}
-            </h2>
-            <span className="font-signature text-2xl text-pink-400">Atelier</span>
-          </div>
+          <h2 className="font-haute text-3xl font-bold text-white tracking-tight">
+            {isSignUp ? 'Join Birthwish' : 'Welcome Back'}
+          </h2>
           <p className="font-editorial text-sm text-slate-300 mt-1">
             {isSignUp
               ? 'Start crafting memorable birthday experiences and gifts'

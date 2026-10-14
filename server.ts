@@ -45,12 +45,14 @@ app.post('/api/v1/payments/initialize', async (req: Request, res: Response) => {
       'Content-Type': 'application/json'
     };
 
-    const payload = {
+    const payload: any = {
       amount: Number(amount),
       currency: currency || 'NGN',
       reference: uniqueReference,
-      narration: narration || `Payment for Wish #${uniqueReference}`,
+      narration: narration || `Birthwish Birthday Gift for ${uniqueReference}`,
       notification_url: notification_url || `${req.protocol}://${req.get('host')}/api/v1/payments/webhook`,
+      redirect_url: `${req.protocol}://${req.get('host')}/#wish-${uniqueReference}`,
+      channels: ['card', 'bank_transfer', 'ussd'],
       customer: {
         name: customer.name || 'Well-Wisher',
         email: customer.email
@@ -65,14 +67,13 @@ app.post('/api/v1/payments/initialize', async (req: Request, res: Response) => {
 
     const responseData = await response.json();
 
-    if (response.ok && responseData.status === true) {
+    if (response.ok && responseData.status === true && responseData.data?.checkout_url) {
       paymentStore.set(uniqueReference, { status: 'initialized', amount: Number(amount), reference: uniqueReference });
       return res.status(200).json(responseData);
     }
 
-    // Fallback sandbox simulation if test keys / network restrictions occur
-    console.info('Kora live response notice, generating secure test session:', responseData?.message || response.statusText);
-    const simulatedCheckoutUrl = `https://checkout.korapay.com/pay/sandbox_${uniqueReference}`;
+    // If Kora API rejected with a specific merchant limit or validation message
+    console.info('Kora live response notice:', responseData?.message || response.statusText);
     paymentStore.set(uniqueReference, { status: 'initialized', amount: Number(amount), reference: uniqueReference });
 
     return res.status(200).json({
@@ -80,7 +81,8 @@ app.post('/api/v1/payments/initialize', async (req: Request, res: Response) => {
       message: 'Initialization successful',
       data: {
         reference: uniqueReference,
-        checkout_url: responseData?.data?.checkout_url || simulatedCheckoutUrl,
+        checkout_url: responseData?.data?.checkout_url || null,
+        is_sandbox_simulation: !responseData?.data?.checkout_url,
         amount: Number(amount),
         currency
       }

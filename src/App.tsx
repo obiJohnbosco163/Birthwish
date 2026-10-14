@@ -11,6 +11,13 @@ import { getStoredWishes, getStoredUser, setStoredUser, signOutUser, supabase, s
 import { onFirebaseAuthStateChanged, signOutFirebase, fetchWishesFromFirestore, deleteWishFromFirestore } from './lib/firebase';
 import { decodeShareableWish } from './lib/wishEncoder';
 import { checkAndNotifyBirthdays } from './lib/notificationService';
+import { PremiumSubscriptionModal } from './components/PremiumSubscriptionModal';
+import { 
+  getUserQuota, 
+  detectSubscriptionReturnFromUrl, 
+  activateUserPremium 
+} from './lib/subscription';
+import confetti from 'canvas-confetti';
 
 export default function App() {
   // White mode is now the DEFAULT toggle mode
@@ -30,6 +37,27 @@ export default function App() {
 
   // User Tutorial / Demo Onboarding Modal state
   const [isOnboardingOpen, setIsOnboardingOpen] = useState<boolean>(false);
+
+  // Kora Premium Plan Subscription Modal states
+  const [isPremiumModalOpen, setIsPremiumModalOpen] = useState<boolean>(false);
+  const [premiumModalReason, setPremiumModalReason] = useState<'limit_reached' | 'manual_upgrade'>('limit_reached');
+
+  // Detect return from Kora payment checkout
+  useEffect(() => {
+    const returnCheck = detectSubscriptionReturnFromUrl();
+    if (returnCheck.detected && user) {
+      activateUserPremium(user, 30).then((updated) => {
+        setUser(updated);
+        setStoredUser(updated);
+        confetti({
+          particleCount: 220,
+          spread: 100,
+          origin: { y: 0.5 },
+          colors: ['#ec4899', '#fbbf24', '#f43f5e', '#10b981', '#ffffff'],
+        });
+      });
+    }
+  }, [user]);
 
   // Sync theme with body and root classes
   useEffect(() => {
@@ -211,11 +239,25 @@ export default function App() {
     window.history.pushState('', document.title, window.location.pathname + window.location.search);
   };
 
+  const handleOpenUpgrade = () => {
+    setPremiumModalReason('manual_upgrade');
+    setIsPremiumModalOpen(true);
+  };
+
   const handleCreateClick = () => {
     if (!user) {
       setCurrentView('landing');
       return;
     }
+
+    // Check user's 3-wish quota (Founder obijohnbosco163@gmail.com is permanently excluded)
+    const quota = getUserQuota(user, wishes);
+    if (quota.hasReachedLimit) {
+      setPremiumModalReason('limit_reached');
+      setIsPremiumModalOpen(true);
+      return;
+    }
+
     setCurrentView('create');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -284,17 +326,19 @@ export default function App() {
     }`}>
       {/* 
         AUTHENTICATED APPLICATION ARCHITECTURE:
-        Navbar renders when user is logged in (featuring Dashboard, Create Birthwish, New Tribute, Theme toggle, and Profile/Sign Out).
-        When user logs in, they are immediately in their private atelier (Dashboard/Create/View).
+        Navbar renders when user is logged in (featuring Dashboard, Create Birthwish, Theme toggle, and Profile/Sign Out).
+        When user logs in, they are immediately in their private dashboard (Dashboard/Create/View).
         There is NO "Home" tab or button for logged-in users.
       */}
       {user && currentView !== 'oauth_consent' && (
         <Navbar
           user={user}
+          wishes={wishes}
           onOpenAuth={() => {}}
           onSignOut={handleSignOut}
           onCreateClick={handleCreateClick}
           onDashboardClick={handleDashboardClick}
+          onUpgradeClick={handleOpenUpgrade}
           currentView={currentView}
           theme={theme}
           onToggleTheme={toggleTheme}
@@ -334,6 +378,7 @@ export default function App() {
             user={user}
             wishes={wishes}
             onCreateClick={handleCreateClick}
+            onUpgradeClick={handleOpenUpgrade}
             onViewWish={handlePreviewWish}
             onDeleteWish={handleDeleteWish}
             theme={theme}
@@ -344,9 +389,11 @@ export default function App() {
         {currentView !== 'oauth_consent' && user && currentView === 'create' && (
           <CreateWishWizard
             user={user}
+            wishes={wishes}
             onWishCreated={handleWishCreated}
             onCancel={handleDashboardClick}
             onPreviewWish={handlePreviewWish}
+            onUpgradeClick={handleOpenUpgrade}
           />
         )}
 
@@ -367,6 +414,20 @@ export default function App() {
         onStartCreate={handleCreateClick}
         theme={theme}
         userName={user?.name}
+      />
+
+      {/* Kora Payment Engine Powered Premium Plan Modal */}
+      <PremiumSubscriptionModal
+        isOpen={isPremiumModalOpen}
+        onClose={() => setIsPremiumModalOpen(false)}
+        user={user}
+        wishes={wishes}
+        onSubscriptionSuccess={(updatedUser) => {
+          setUser(updatedUser);
+          setStoredUser(updatedUser);
+        }}
+        theme={theme}
+        reason={premiumModalReason}
       />
     </div>
   );

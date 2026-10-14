@@ -65,6 +65,10 @@ export interface UserProfile {
   avatarUrl?: string;
   photoURL?: string;
   phoneNumber?: string;
+  isPremium?: boolean;
+  premiumExpiresAt?: string;
+  subscriptionPlan?: 'free' | 'premium' | 'founder';
+  premiumSubscribedAt?: string;
 }
 
 export interface RainbowColorConfig {

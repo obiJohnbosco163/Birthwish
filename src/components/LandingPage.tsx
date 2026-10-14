@@ -197,13 +197,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 <h1 className="font-signature text-6xl sm:text-7xl text-transparent bg-clip-text bg-gradient-to-r from-pink-500 via-rose-400 to-amber-400 tracking-wide font-normal">
                   Birthwish
                 </h1>
-                <span className={`font-editorial text-xs tracking-widest uppercase px-2.5 py-0.5 rounded-full font-semibold border ${
-                  isLight 
-                    ? 'bg-pink-50 text-pink-600 border-pink-200' 
-                    : 'bg-pink-500/10 text-pink-300 border-pink-500/25'
-                }`}>
-                  Atelier
-                </span>
               </div>
               <p className={`font-editorial text-xs tracking-widest uppercase font-medium mt-1 ${
                 isLight ? 'text-amber-700' : 'text-amber-200/90'

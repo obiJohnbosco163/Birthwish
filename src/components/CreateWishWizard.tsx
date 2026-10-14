@@ -11,8 +11,9 @@ import { initializeKoraHoldingPayment, KORA_CONFIG } from '../lib/kora';
 import { saveWish } from '../lib/supabase';
 import { saveWishToFirestore } from '../lib/firebase';
 import { generateStandaloneBirthwishHtml } from '../lib/htmlExporter';
-import { generateShareableWishLink } from '../lib/wishEncoder';
+import { generateShareableWishLink, generateWhatsAppShareUrl } from '../lib/wishEncoder';
 import { compressImageDataUrl } from '../lib/imageCompressor';
+import { WhatsAppIcon } from './WhatsAppIcon';
 import confetti from 'canvas-confetti';
 import { 
   Sparkles, 
@@ -33,14 +34,20 @@ import {
   AlertTriangle,
   Gift,
   Copy,
-  ExternalLink
+  ExternalLink,
+  Crown,
+  Zap,
+  Lock
 } from 'lucide-react';
+import { getUserQuota, KORA_PREMIUM_CHECKOUT_URL } from '../lib/subscription';
 
 interface CreateWishWizardProps {
   user: UserProfile | null;
+  wishes?: Birthwish[];
   onWishCreated: (wish: Birthwish) => void;
   onCancel: () => void;
   onPreviewWish: (wish: Birthwish) => void;
+  onUpgradeClick?: () => void;
 }
 
 const CATEGORIES: { label: BirthwishCategory; icon: string; desc: string }[] = [
@@ -69,10 +76,13 @@ const PRESET_PORTRAITS = [
 
 export const CreateWishWizard: React.FC<CreateWishWizardProps> = ({
   user,
+  wishes = [],
   onWishCreated,
   onCancel,
   onPreviewWish,
+  onUpgradeClick,
 }) => {
+  const quota = getUserQuota(user, wishes);
   // Steps: 1 (Category) -> 2 (Color) -> 3 (Details/Media/Epistle) -> 4 (Kora Payment Holding) -> 5 (Success/Export)
   const [step, setStep] = useState<number>(1);
 
@@ -278,6 +288,87 @@ export const CreateWishWizard: React.FC<CreateWishWizardProps> = ({
     setTimeout(() => setCopiedLink(false), 3000);
   };
 
+  // If user has reached the 3-free-wish limit and is not founder or active premium
+  if (quota.hasReachedLimit) {
+    return (
+      <div className="max-w-2xl mx-auto px-4 py-12 animate-fade-in text-slate-100">
+        <div className="glass-card rounded-3xl p-8 sm:p-12 border border-pink-500/30 text-center space-y-6 shadow-2xl relative overflow-hidden bg-[#080d1a]">
+          {/* Subtle grid pattern */}
+          <div 
+            className="absolute inset-0 opacity-[0.03] pointer-events-none rounded-3xl"
+            style={{
+              backgroundImage: `radial-gradient(circle at 1px 1px, #ffffff 1px, transparent 0)`,
+              backgroundSize: '24px 24px'
+            }}
+          />
+
+          <div className="w-16 h-16 rounded-3xl bg-gradient-to-tr from-pink-500 to-rose-600 flex items-center justify-center text-white mx-auto shadow-xl shadow-pink-500/30">
+            <Lock className="w-8 h-8 text-amber-300" />
+          </div>
+
+          <div className="space-y-2">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/15 text-amber-300 text-xs font-mono font-bold uppercase tracking-wider border border-amber-500/30">
+              <Zap className="w-3.5 h-3.5 text-amber-400" />
+              <span>Free Quota Depleted · 3 of 3 Used</span>
+            </div>
+            <h2 className="font-cinzel text-3xl font-extrabold text-white tracking-tight">
+              You&apos;ve Used All 3 Free Lucky Birthwishes!
+            </h2>
+            <p className="text-slate-300 text-sm max-w-md mx-auto leading-relaxed">
+              Each user receives 3 complimentary tributes. To craft unlimited birthwishes with custom rainbow themes, 3D interactive cakes, and epistles, subscribe to Birthwish Premium for 1 month via Kora.
+            </p>
+          </div>
+
+          {/* Quick Perks */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-left p-4 rounded-2xl bg-slate-900/80 border border-white/10 text-xs text-slate-300">
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+              <span>Unlimited Birthwishes (30 days)</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+              <span>All 8 Rainbow Color Themes</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+              <span>3D Interactive Cake &amp; Audio</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+              <span>Offline Keepsake .HTML Exports</span>
+            </div>
+          </div>
+
+          <div className="pt-2 space-y-3">
+            <button
+              type="button"
+              onClick={() => {
+                if (onUpgradeClick) {
+                  onUpgradeClick();
+                } else {
+                  window.open(KORA_PREMIUM_CHECKOUT_URL, '_blank', 'noopener,noreferrer');
+                }
+              }}
+              className="w-full py-4 px-6 rounded-2xl bg-gradient-to-r from-pink-500 via-rose-500 to-amber-500 hover:from-pink-600 hover:to-amber-600 text-white font-bold text-sm shadow-xl shadow-pink-500/30 flex items-center justify-center gap-2.5 cursor-pointer transition-all hover:scale-[1.01] active:scale-[0.99]"
+            >
+              <CreditCard className="w-4 h-4 text-amber-300" />
+              <span>Subscribe for 1 Month via Kora (₦3,500)</span>
+              <ExternalLink className="w-4 h-4" />
+            </button>
+
+            <button
+              type="button"
+              onClick={onCancel}
+              className="px-6 py-2.5 rounded-xl text-xs font-semibold text-slate-400 hover:text-white transition-colors cursor-pointer"
+            >
+              Back to Dashboard
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-4xl mx-auto px-4 py-8 animate-fade-in">
       {/* Wizard Progress Bar (Goaltic Dark Style) */}
@@ -286,7 +377,7 @@ export const CreateWishWizard: React.FC<CreateWishWizardProps> = ({
           <span className={step >= 1 ? 'text-pink-400' : ''}>1. Category</span>
           <span className={step >= 2 ? 'text-pink-400' : ''}>2. Theme Color</span>
           <span className={step >= 3 ? 'text-pink-400' : ''}>3. Celebrant & Story</span>
-          <span className={step >= 4 ? 'text-pink-400' : ''}>4. Kora Gift Vault</span>
+          <span className={step >= 4 ? 'text-pink-400' : ''}>4. Cash Gift (Coming Soon)</span>
           <span className={step >= 5 ? 'text-pink-400' : ''}>5. Launch</span>
         </div>
         <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden p-0.5 border border-white/10">
@@ -746,148 +837,78 @@ export const CreateWishWizard: React.FC<CreateWishWizardProps> = ({
               onClick={handleNextFromDetails}
               className="px-6 py-2.5 rounded-full bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white font-semibold text-sm shadow-lg shadow-pink-500/25 flex items-center gap-2 cursor-pointer transition-all hover:scale-105"
             >
-              <span>Next: Kora Payment Holding</span>
+              <span>Next: Cash Gift (Coming Soon)</span>
               <ArrowRight className="w-4 h-4" />
             </button>
           </div>
         </div>
       )}
 
-      {/* ================= STEP 4: KORA PAYMENT & HOLDING PASSCODE (OPTIONAL) ================= */}
+      {/* ================= STEP 4: KORA PAYMENT & HOLDING (COMING SOON FEATURE) ================= */}
       {step === 4 && (
         <div className="glass-card rounded-3xl p-6 sm:p-10 border border-white/10 shadow-2xl space-y-6">
           <div className="text-center max-w-xl mx-auto">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/15 text-emerald-400 text-xs font-semibold uppercase tracking-wider border border-emerald-500/30 mb-3">
-              <Gift className="w-3.5 h-3.5" />
-              <span>Totally Optional Step</span>
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/15 text-amber-300 text-xs font-semibold uppercase tracking-wider border border-amber-500/30 mb-3">
+              <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+              <span>Feature Preview · Coming Soon</span>
             </div>
             <h2 className="font-display text-3xl font-extrabold text-white tracking-tight">
-              Gift the Celebrant Money (Kora Pay)
+              Birthday Cash Gift Vault
             </h2>
             <p className="text-slate-400 text-sm mt-2">
-              Send celebratory funds to a secure holding vault. You can skip this page anytime if you only want to send the emotional wishes!
+              Send real celebratory cash gifts alongside your tributes, held in a secure vault powered by Kora Pay until unlocked with your secret passcode.
             </p>
           </div>
 
-          {/* Toggle Gift Option */}
-          <div className="p-5 rounded-2xl bg-white/[0.03] border border-white/10 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-pink-500/20 text-pink-400 flex items-center justify-center font-bold">
-                ₦
-              </div>
-              <div>
-                <h4 className="font-display font-bold text-white text-base">Attach Cash Gift with Kora</h4>
-                <p className="text-xs text-slate-400">
-                  Funds stay securely in holding until your celebrant claims them using your secret passcode.
-                </p>
-              </div>
-            </div>
-            <label className="relative inline-flex items-center cursor-pointer">
-              <input
-                type="checkbox"
-                checked={includeGift}
-                onChange={(e) => setIncludeGift(e.target.checked)}
-                className="sr-only peer"
-              />
-              <div className="w-12 h-6 bg-white/20 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[3px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
-            </label>
-          </div>
-
-          {includeGift && (
-            <div className="space-y-6 pt-2 animate-fade-in">
-              {/* Amount Selection */}
-              <div className="p-6 rounded-2xl bg-white/[0.02] border border-white/10">
-                <div className="flex justify-between items-center mb-2">
-                  <label className="text-xs font-semibold text-slate-300">
-                    Gift Amount (Minimum ₦2,000 NGN)
-                  </label>
-                  <span className="text-xs text-emerald-400 font-semibold">No Maximum Limit</span>
+          {/* Coming Soon Showcase Banner */}
+          <div className="p-6 rounded-3xl bg-gradient-to-br from-amber-500/10 via-pink-500/5 to-purple-500/10 border border-amber-500/30 text-left space-y-4 relative overflow-hidden">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/10 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-500/20 to-pink-500/20 border border-amber-500/40 flex items-center justify-center text-2xl shrink-0 shadow-lg">
+                  🎁
                 </div>
-                <div className="relative mb-4">
-                  <span className="absolute left-4 top-3 text-slate-400 font-bold text-base">₦</span>
-                  <input
-                    type="number"
-                    min={2000}
-                    step={500}
-                    value={giftAmount}
-                    onChange={(e) => setGiftAmount(Number(e.target.value))}
-                    className="w-full pl-9 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-lg font-bold text-white focus:outline-none focus:border-emerald-500 transition-colors"
-                  />
-                </div>
-
-                <div className="flex flex-wrap gap-2">
-                  {[2000, 5000, 10000, 20000, 50000].map((amt) => (
-                    <button
-                      key={amt}
-                      type="button"
-                      onClick={() => setGiftAmount(amt)}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all cursor-pointer ${
-                        giftAmount === amt
-                          ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500'
-                          : 'bg-white/5 text-slate-400 border-white/10 hover:text-white'
-                      }`}
-                    >
-                      ₦{amt.toLocaleString()}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Secret Passcode Setting & Serious Warning */}
-              <div className="p-6 rounded-2xl bg-amber-500/10 border border-amber-500/30 space-y-4">
-                <div className="flex items-start gap-3">
-                  <ShieldAlert className="w-6 h-6 text-amber-400 shrink-0 mt-0.5" />
-                  <div>
-                    <h4 className="font-display font-bold text-amber-300 text-sm">
-                      CRITICAL: Set Secret Claim Passcode
-                    </h4>
-                    <p className="text-xs text-amber-200/80 leading-relaxed mt-1">
-                      ⚠️ <b>Do not forget or misplace this passcode!</b> It is the exact secret passcode your celebrant
-                      will type in to claim and disburse these funds into their bank account via Kora.
-                    </p>
-                  </div>
-                </div>
-
                 <div>
-                  <label className="block text-xs font-semibold text-slate-200 mb-1.5">
-                    Secret Passcode (Word or Number)
-                  </label>
-                  <div className="relative">
-                    <Key className="absolute left-3.5 top-3 w-4 h-4 text-amber-400" />
-                    <input
-                      type="text"
-                      required
-                      value={giftPasscode}
-                      onChange={(e) => setGiftPasscode(e.target.value)}
-                      placeholder="e.g. MIMI24 or QUEEN2026"
-                      className="w-full pl-10 pr-4 py-2.5 bg-black/40 border border-amber-500/40 rounded-xl text-sm font-mono tracking-wider text-amber-300 placeholder-amber-400/40 focus:outline-none focus:border-amber-400"
-                    />
-                  </div>
+                  <h3 className="font-display font-bold text-white text-lg">
+                    Direct Cash Gifting with Instant Settlement
+                  </h3>
+                  <p className="text-xs text-slate-400">Powered by Kora Payment Gateway</p>
                 </div>
+              </div>
+              <span className="self-start sm:self-center px-3 py-1 rounded-full bg-amber-400/20 text-amber-300 border border-amber-400/40 text-[11px] font-bold font-mono uppercase tracking-wider">
+                Coming Soon
+              </span>
+            </div>
 
-                <label className="flex items-start gap-2.5 text-xs text-slate-300 cursor-pointer pt-1">
-                  <input
-                    type="checkbox"
-                    checked={passcodeConfirmed}
-                    onChange={(e) => setPasscodeConfirmed(e.target.checked)}
-                    className="mt-0.5 rounded border-amber-500 text-amber-500 focus:ring-0"
-                  />
-                  <span>
-                    I understand that my celebrant will need this exact secret passcode to unlock and receive the funds via Kora Settlement.
-                  </span>
-                </label>
+            <p className="text-xs text-slate-300 leading-relaxed">
+              We are finalizing live bank clearing integrations with Kora API to deliver frictionless settlements across Nigerian commercial banks, Microfinance banks, MTN Mobile Money, and M-Pesa. This feature will go live in the upcoming update!
+            </p>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
+              <div className="p-3.5 rounded-2xl bg-black/40 border border-white/10 text-xs space-y-1">
+                <p className="font-bold text-white flex items-center gap-1.5">
+                  <CreditCard className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>Kora Gateway</span>
+                </p>
+                <p className="text-[11px] text-slate-400">Card, bank transfer, USSD and mobile money payment channels.</p>
               </div>
 
-              {/* Kora API Badge Notice */}
-              <div className="flex items-center justify-between text-xs text-slate-400 px-2">
-                <span className="flex items-center gap-1.5">
-                  <CreditCard className="w-4 h-4 text-emerald-400" />
-                  <span>Settlement Engine: <b>Kora API (GDG Owerri Hackathon)</b></span>
-                </span>
-                <span className="font-mono text-[10px] text-slate-500">pk_test_...KDds</span>
+              <div className="p-3.5 rounded-2xl bg-black/40 border border-white/10 text-xs space-y-1">
+                <p className="font-bold text-white flex items-center gap-1.5">
+                  <Key className="w-3.5 h-3.5 text-amber-400" />
+                  <span>Passcode Vault</span>
+                </p>
+                <p className="text-[11px] text-slate-400">Funds remain encrypted in holding until the celebrant unlocks them.</p>
+              </div>
+
+              <div className="p-3.5 rounded-2xl bg-black/40 border border-white/10 text-xs space-y-1">
+                <p className="font-bold text-white flex items-center gap-1.5">
+                  <Check className="w-3.5 h-3.5 text-pink-400" />
+                  <span>Instant Disbursal</span>
+                </p>
+                <p className="text-[11px] text-slate-400">Direct NUBAN bank resolution and automated payout to account.</p>
               </div>
             </div>
-          )}
+          </div>
 
           <div className="mt-8 flex justify-between items-center pt-6 border-t border-white/10">
             <button
@@ -899,32 +920,17 @@ export const CreateWishWizard: React.FC<CreateWishWizardProps> = ({
               <span>Back</span>
             </button>
 
-            <div className="flex items-center gap-3">
-              {!includeGift && (
-                <button
-                  type="button"
-                  onClick={handleProceedPayment}
-                  className="px-5 py-2.5 rounded-full text-sm font-semibold text-slate-300 hover:text-white hover:bg-white/10 border border-white/15 transition-all cursor-pointer"
-                >
-                  Skip Cash Gift & Launch
-                </button>
-              )}
-              <button
-                type="button"
-                disabled={paymentProcessing}
-                onClick={handleProceedPayment}
-                className="px-8 py-3 rounded-full bg-gradient-to-r from-pink-500 via-rose-500 to-amber-500 hover:from-pink-600 hover:to-amber-600 text-white font-bold text-base shadow-xl shadow-pink-500/30 flex items-center gap-2 cursor-pointer transition-all hover:scale-105 active:scale-95"
-              >
-                {paymentProcessing ? (
-                  <span>Initiating with Kora API...</span>
-                ) : (
-                  <>
-                    <Sparkles className="w-5 h-5 text-yellow-300" />
-                    <span>Create Birthwish</span>
-                  </>
-                )}
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setIncludeGift(false);
+                handleFinalCreation();
+              }}
+              className="px-8 py-3 rounded-full bg-gradient-to-r from-pink-500 via-rose-500 to-amber-500 hover:from-pink-600 hover:to-amber-600 text-white font-bold text-base shadow-xl shadow-pink-500/30 flex items-center gap-2 cursor-pointer transition-all hover:scale-105 active:scale-95"
+            >
+              <Sparkles className="w-5 h-5 text-amber-300" />
+              <span>Publish and Create Birthwish</span>
+            </button>
           </div>
         </div>
       )}
@@ -1004,6 +1010,17 @@ export const CreateWishWizard: React.FC<CreateWishWizardProps> = ({
                   </>
                 )}
               </button>
+
+              <a
+                href={generateWhatsAppShareUrl(createdWish)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shrink-0 shadow-md bg-emerald-600 hover:bg-emerald-500 text-white hover:scale-105 active:scale-95 border border-emerald-400/40"
+                title="Send directly via WhatsApp"
+              >
+                <WhatsAppIcon className="w-4 h-4 fill-current text-white" />
+                <span>WhatsApp</span>
+              </a>
             </div>
           </div>
 
@@ -1056,6 +1073,18 @@ export const CreateWishWizard: React.FC<CreateWishWizardProps> = ({
               {copiedLink ? <CheckCircle2 className="w-4 h-4 text-emerald-400" /> : <Share2 className="w-4 h-4" />}
               <span>{copiedLink ? 'Link Copied to Clipboard!' : 'Copy Shareable Link'}</span>
             </button>
+
+            {/* Direct WhatsApp Share */}
+            <a
+              href={generateWhatsAppShareUrl(createdWish)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full sm:w-auto px-6 py-3.5 rounded-full bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-500 hover:to-green-500 text-white font-bold text-sm flex items-center justify-center gap-2 cursor-pointer transition-all hover:scale-105 shadow-lg shadow-emerald-500/25 border border-emerald-400/30"
+              title="Share tribute directly on WhatsApp"
+            >
+              <WhatsAppIcon className="w-4 h-4 fill-current text-white" />
+              <span>Share to WhatsApp</span>
+            </a>
 
             <button
               type="button"

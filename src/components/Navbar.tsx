@@ -2,14 +2,18 @@ import React, { useState, useRef, useEffect } from 'react';
 import { BirthwishLogo } from './BirthwishLogo';
 import { ThemeToggle } from './ThemeToggle';
 import { Sparkles, PlusCircle, LogOut, ShieldCheck, LayoutDashboard, ChevronDown } from 'lucide-react';
-import { UserProfile } from '../types';
+import { Birthwish, UserProfile } from '../types';
+import { getUserQuota } from '../lib/subscription';
+import { Crown, Zap } from 'lucide-react';
 
 interface NavbarProps {
   user: UserProfile | null;
+  wishes?: Birthwish[];
   onOpenAuth: () => void;
   onSignOut: () => void;
   onCreateClick: () => void;
   onDashboardClick: () => void;
+  onUpgradeClick?: () => void;
   onLandingClick?: () => void;
   currentView: 'landing' | 'dashboard' | 'create' | 'view';
   theme: 'dark' | 'light';
@@ -18,15 +22,18 @@ interface NavbarProps {
 
 export const Navbar: React.FC<NavbarProps> = ({
   user,
+  wishes = [],
   onOpenAuth,
   onSignOut,
   onCreateClick,
   onDashboardClick,
+  onUpgradeClick,
   onLandingClick,
   currentView,
   theme,
   onToggleTheme,
 }) => {
+  const quota = getUserQuota(user, wishes);
   const isLight = theme === 'light';
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement>(null);
@@ -101,21 +108,38 @@ export const Navbar: React.FC<NavbarProps> = ({
           {/* Dark / White Mode Toggle */}
           <ThemeToggle theme={theme} onToggle={onToggleTheme} />
 
+          {/* Plan Status Badges & Controls */}
+          {user && (
+            <>
+              {quota.isFounder ? (
+                <div className="hidden lg:flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-300 text-xs font-bold font-mono">
+                  <Crown className="w-3.5 h-3.5 text-amber-400" />
+                  <span>Founder VIP</span>
+                </div>
+              ) : quota.isPremium ? (
+                <div className="hidden lg:flex items-center gap-1.5 px-3 py-1 rounded-full bg-pink-500/15 border border-pink-500/30 text-pink-300 text-xs font-bold font-mono">
+                  <Crown className="w-3.5 h-3.5 text-pink-400" />
+                  <span>Premium Active</span>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={onUpgradeClick}
+                  className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gradient-to-r from-amber-500/15 to-pink-500/15 hover:from-amber-500/25 hover:to-pink-500/25 border border-amber-500/30 text-amber-300 text-xs font-bold font-mono transition-all cursor-pointer shadow-sm active:scale-95"
+                  title="Upgrade to unlimited Birthwishes"
+                >
+                  <Zap className="w-3.5 h-3.5 text-amber-400" />
+                  <span>Upgrade ({quota.remainingCount}/3 left)</span>
+                </button>
+              )}
+            </>
+          )}
+
           <div className="hidden lg:flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 text-xs font-semibold">
             <ShieldCheck className="w-3.5 h-3.5" />
             <span>Active &amp; Secure</span>
           </div>
 
-          {/* New Tribute button */}
-          {user && (
-            <button
-              onClick={onCreateClick}
-              className="hidden sm:inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-pink-500 via-rose-500 to-amber-500 hover:from-pink-600 hover:to-amber-600 text-white text-xs font-bold shadow-lg shadow-pink-500/25 transition-all hover:scale-105 active:scale-95 cursor-pointer"
-            >
-              <PlusCircle className="w-3.5 h-3.5" />
-              <span>New Tribute</span>
-            </button>
-          )}
 
           {/* User Account / Profile Dropdown with Logout */}
           {user ? (
@@ -169,7 +193,49 @@ export const Navbar: React.FC<NavbarProps> = ({
                     </div>
                   </div>
 
-                  <div className="py-2 space-y-1">
+                  {/* Subscription Plan Status in Menu */}
+                  <div className="p-2.5 my-2 rounded-xl bg-white/[0.03] border border-white/10 text-xs space-y-1.5">
+                    <div className="flex justify-between items-center">
+                      <span className="text-[10px] uppercase font-bold text-slate-400 font-mono">Plan</span>
+                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold font-mono ${
+                        quota.isFounder 
+                          ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' 
+                          : quota.isPremium 
+                          ? 'bg-pink-500/20 text-pink-300 border border-pink-500/30' 
+                          : 'bg-white/10 text-slate-300'
+                      }`}>
+                        {quota.planName}
+                      </span>
+                    </div>
+
+                    {!quota.isUnlimited && (
+                      <div className="space-y-1">
+                        <div className="flex justify-between text-[11px] text-slate-300 font-mono">
+                          <span>Usage:</span>
+                          <span>{quota.usedCount} / 3 Free Wishes</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsProfileMenuOpen(false);
+                            if (onUpgradeClick) onUpgradeClick();
+                          }}
+                          className="w-full mt-1 py-1.5 px-2 rounded-lg bg-gradient-to-r from-pink-500 to-rose-500 text-white font-bold text-[11px] flex items-center justify-center gap-1.5 cursor-pointer shadow-sm hover:scale-[1.02] active:scale-95 transition-all"
+                        >
+                          <Zap className="w-3 h-3 text-amber-300" />
+                          <span>Upgrade to Unlimited</span>
+                        </button>
+                      </div>
+                    )}
+
+                    {quota.isPremium && !quota.isFounder && (
+                      <p className="text-[10px] text-pink-400 font-mono">
+                        Active for next {quota.daysRemaining} days
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="py-1 space-y-1">
                     <button
                       onClick={() => {
                         setIsProfileMenuOpen(false);

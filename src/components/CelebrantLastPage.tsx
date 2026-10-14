@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Birthwish } from '../types';
 import { happyBirthdayAudio } from '../lib/happyBirthdayAudio';
+import { generateWhatsAppShareUrl } from '../lib/wishEncoder';
 import { Interactive3DCake } from './Interactive3DCake';
 import { RAINBOW_COLORS } from '../lib/colors';
+import { WhatsAppIcon } from './WhatsAppIcon';
 import confetti from 'canvas-confetti';
 import { 
   ArrowLeft, 
@@ -81,6 +83,8 @@ export const CelebrantLastPage: React.FC<CelebrantLastPageProps> = ({
     frame();
   };
 
+  const whatsappShareUrl = generateWhatsAppShareUrl(wish);
+
   return (
     <div 
       className="fixed inset-0 z-50 overflow-y-auto flex flex-col items-center p-4 sm:p-8 animate-fade-in text-slate-100"
@@ -100,6 +104,19 @@ export const CelebrantLastPage: React.FC<CelebrantLastPageProps> = ({
         </button>
 
         <div className="flex items-center gap-2">
+          {/* Share to WhatsApp */}
+          <a
+            href={whatsappShareUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/40 text-emerald-300 font-bold text-xs font-mono-tech transition-all shadow-md cursor-pointer active:scale-95"
+            title="Share this tribute to WhatsApp"
+          >
+            <WhatsAppIcon className="w-3.5 h-3.5 fill-current text-emerald-400" />
+            <span className="hidden sm:inline">Share to WhatsApp</span>
+            <span className="sm:hidden">WhatsApp</span>
+          </a>
+
           {/* Audio toggle button */}
           <button
             onClick={handleToggleMusic}
@@ -330,11 +347,24 @@ export const CelebrantLastPage: React.FC<CelebrantLastPageProps> = ({
           {hasPaymentStatus && (
             <button
               onClick={onClaimClick}
-              className="px-8 py-3.5 rounded-full font-bold font-orbitron text-xs sm:text-sm uppercase tracking-wider bg-emerald-500 hover:bg-emerald-400 text-white shadow-xl shadow-emerald-500/30 transition-all transform hover:scale-105 active:scale-95 cursor-pointer"
+              className="px-8 py-3.5 rounded-full font-bold font-orbitron text-xs sm:text-sm uppercase tracking-wider bg-emerald-600/90 hover:bg-emerald-500 text-white shadow-xl shadow-emerald-500/30 transition-all transform hover:scale-105 active:scale-95 cursor-pointer inline-flex items-center gap-2"
             >
-              <span>Disburse Gift ₦{wish.giftAmount?.toLocaleString()}</span>
+              <span>Cash Gift Vault ₦{wish.giftAmount?.toLocaleString()}</span>
+              <span className="px-2 py-0.5 rounded-full bg-black/40 text-[10px] text-amber-200 border border-amber-400/30">Soon</span>
             </button>
           )}
+
+          {/* Share to WhatsApp Button */}
+          <a
+            href={whatsappShareUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="px-8 py-3.5 rounded-full font-bold font-orbitron text-xs sm:text-sm uppercase tracking-wider bg-gradient-to-r from-emerald-600 via-emerald-500 to-green-600 hover:from-emerald-500 hover:to-green-500 text-white shadow-xl shadow-emerald-500/30 transition-all transform hover:scale-105 active:scale-95 cursor-pointer inline-flex items-center gap-2 border border-emerald-400/40"
+            title="Share this tribute to WhatsApp"
+          >
+            <WhatsAppIcon className="w-4 h-4 fill-current text-white" />
+            <span>Share to WhatsApp 🎂</span>
+          </a>
 
           <button
             onClick={() => window.print()}
