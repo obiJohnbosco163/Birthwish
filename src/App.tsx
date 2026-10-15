@@ -41,6 +41,7 @@ export default function App() {
   // Kora Premium Plan Subscription Modal states
   const [isPremiumModalOpen, setIsPremiumModalOpen] = useState<boolean>(false);
   const [premiumModalReason, setPremiumModalReason] = useState<'limit_reached' | 'manual_upgrade'>('limit_reached');
+  const [reminderToast, setReminderToast] = useState<{ message: string; recipient: string } | null>(null);
 
   // Detect return from Kora payment checkout
   useEffect(() => {
@@ -213,6 +214,24 @@ export default function App() {
     return () => clearInterval(interval);
   }, [wishes]);
 
+  // Listen for background automated reminder email dispatches
+  useEffect(() => {
+    const handleEmailSent = (e: any) => {
+      const detail = e.detail;
+      if (detail) {
+        setReminderToast({
+          message: detail.type === '24h' 
+            ? `⏰ 24h Birthday Reminder alert dispatched for ${detail.celebrantName}!`
+            : `🎂 Birthday Morning Reminder alert dispatched for ${detail.celebrantName}!`,
+          recipient: detail.recipientEmail,
+        });
+        setTimeout(() => setReminderToast(null), 5000);
+      }
+    };
+    window.addEventListener('birthwish-email-reminder-sent', handleEmailSent);
+    return () => window.removeEventListener('birthwish-email-reminder-sent', handleEmailSent);
+  }, []);
+
   const handleLoginSuccess = (authenticatedUser: UserProfile) => {
     setUser(authenticatedUser);
     setStoredUser(authenticatedUser);
@@ -383,6 +402,7 @@ export default function App() {
             onDeleteWish={handleDeleteWish}
             theme={theme}
             onOpenTutorial={() => setIsOnboardingOpen(true)}
+            onWishUpdated={handleUpdateWish}
           />
         )}
 
@@ -429,6 +449,17 @@ export default function App() {
         theme={theme}
         reason={premiumModalReason}
       />
+
+      {/* Real-time Email & Browser Reminder Alert Toast */}
+      {reminderToast && (
+        <div className="fixed bottom-6 right-6 z-50 p-4 rounded-2xl bg-[#0b1329]/95 text-white text-xs font-bold shadow-2xl backdrop-blur-md flex items-start gap-3 border border-amber-400/40 animate-bounce-subtle max-w-sm">
+          <span className="text-amber-400 text-base">⏰</span>
+          <div className="space-y-0.5">
+            <p className="font-bold text-white text-xs">{reminderToast.message}</p>
+            <p className="text-[11px] text-amber-300 font-mono">Delivered to: {reminderToast.recipient}</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

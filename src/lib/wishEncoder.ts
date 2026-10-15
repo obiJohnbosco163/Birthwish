@@ -40,6 +40,15 @@ export const generateShareableWishLink = (wish: Birthwish): string => {
       gp: wish.giftPasscode,
       gs: wish.giftStatus,
       kr: wish.koraPaymentReference,
+      re: wish.reminder ? {
+        e: wish.reminder.enabled,
+        b24: wish.reminder.notify24HoursBefore,
+        od: wish.reminder.notifyOnDay,
+        em: wish.reminder.emailAlertEnabled,
+        br: wish.reminder.browserAlertEnabled,
+        ml: wish.reminder.reminderEmail,
+        cn: wish.reminder.customNote,
+      } : undefined,
     };
 
     const json = JSON.stringify(payload);
@@ -104,6 +113,15 @@ export const decodeShareableWish = (hash: string): { wishId: string | null; enco
         giftPasscode: p.gp,
         giftStatus: p.gs || 'unfunded',
         koraPaymentReference: p.kr,
+        reminder: p.re ? {
+          enabled: Boolean(p.re.e),
+          notify24HoursBefore: Boolean(p.re.b24 ?? true),
+          notifyOnDay: Boolean(p.re.od ?? true),
+          emailAlertEnabled: Boolean(p.re.em),
+          browserAlertEnabled: Boolean(p.re.br ?? true),
+          reminderEmail: p.re.ml,
+          customNote: p.re.cn,
+        } : undefined,
       };
 
       return { wishId: wish.id, encodedWish: wish };

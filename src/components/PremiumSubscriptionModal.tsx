@@ -238,7 +238,7 @@ export const PremiumSubscriptionModal: React.FC<PremiumSubscriptionModalProps> =
               </span>
             </div>
             <div className="text-xl font-black text-white font-mono flex items-baseline gap-1.5">
-              <span>₦3,500</span>
+              <span>₦2,000</span>
               <span className="text-xs text-slate-300 font-normal">/ 1 Full Month (30 Days)</span>
             </div>
             <ul className="space-y-2 text-slate-200 text-[11px]">
@@ -285,7 +285,7 @@ export const PremiumSubscriptionModal: React.FC<PremiumSubscriptionModalProps> =
             className="w-full py-4 px-6 rounded-2xl bg-gradient-to-r from-pink-500 via-rose-500 to-amber-500 hover:from-pink-600 hover:to-amber-600 text-white font-bold text-sm shadow-xl shadow-pink-500/30 flex items-center justify-center gap-2.5 cursor-pointer transition-all hover:scale-[1.01] active:scale-[0.99]"
           >
             <CreditCard className="w-4 h-4 text-amber-300" />
-            <span>Pay with Kora · Subscribe for 1 Month</span>
+            <span>Pay ₦2,000 with Kora · Subscribe for 1 Month</span>
             <ExternalLink className="w-4 h-4" />
           </button>
 

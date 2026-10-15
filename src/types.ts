@@ -31,6 +31,18 @@ export interface ClaimDetails {
   narration?: string;
 }
 
+export interface BirthdayReminderSettings {
+  enabled: boolean;
+  notify24HoursBefore: boolean;
+  notifyOnDay: boolean;
+  browserAlertEnabled: boolean;
+  emailAlertEnabled: boolean;
+  reminderEmail?: string;
+  customNote?: string;
+  lastNotifiedDate?: string;
+  lastNotifiedType?: '24h' | 'day';
+}
+
 export interface Birthwish {
   id: string;
   createdAt: string;
@@ -56,6 +68,7 @@ export interface Birthwish {
   giftClaimedAt?: string;
   claimDetails?: ClaimDetails;
   koraPaymentReference?: string;
+  reminder?: BirthdayReminderSettings;
 }
 
 export interface UserProfile {

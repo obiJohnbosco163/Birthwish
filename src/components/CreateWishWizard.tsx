@@ -37,8 +37,12 @@ import {
   ExternalLink,
   Crown,
   Zap,
-  Lock
+  Lock,
+  Bell,
+  Clock,
+  Mail
 } from 'lucide-react';
+import { BirthdayReminderModal } from './BirthdayReminderModal';
 import { getUserQuota, KORA_PREMIUM_CHECKOUT_URL } from '../lib/subscription';
 
 interface CreateWishWizardProps {
@@ -113,6 +117,12 @@ export const CreateWishWizard: React.FC<CreateWishWizardProps> = ({
   const [passcodeConfirmed, setPasscodeConfirmed] = useState<boolean>(false);
   const [paymentProcessing, setPaymentProcessing] = useState<boolean>(false);
   const [koraRef, setKoraRef] = useState<string>('');
+
+  // Birthday Reminder State
+  const [reminderEnabled, setReminderEnabled] = useState<boolean>(true);
+  const [reminder24HoursBefore, setReminder24HoursBefore] = useState<boolean>(true);
+  const [reminderEmail, setReminderEmail] = useState<string>(user?.email || '');
+  const [isReminderModalOpen, setIsReminderModalOpen] = useState<boolean>(false);
 
   // Created Wish
   const [createdWish, setCreatedWish] = useState<Birthwish | null>(null);
@@ -247,6 +257,14 @@ export const CreateWishWizard: React.FC<CreateWishWizardProps> = ({
       giftPasscode: includeGift ? giftPasscode.trim() : undefined,
       giftStatus: includeGift ? 'holding' : 'unfunded',
       koraPaymentReference: koraRef || (includeGift ? `BW-KORA-${Date.now()}` : undefined),
+      reminder: {
+        enabled: reminderEnabled,
+        notify24HoursBefore: reminder24HoursBefore,
+        notifyOnDay: true,
+        browserAlertEnabled: true,
+        emailAlertEnabled: Boolean(reminderEmail.trim()),
+        reminderEmail: reminderEmail.trim() || user?.email || '',
+      },
     };
 
     const saved = await saveWish(newWish);
@@ -352,7 +370,7 @@ export const CreateWishWizard: React.FC<CreateWishWizardProps> = ({
               className="w-full py-4 px-6 rounded-2xl bg-gradient-to-r from-pink-500 via-rose-500 to-amber-500 hover:from-pink-600 hover:to-amber-600 text-white font-bold text-sm shadow-xl shadow-pink-500/30 flex items-center justify-center gap-2.5 cursor-pointer transition-all hover:scale-[1.01] active:scale-[0.99]"
             >
               <CreditCard className="w-4 h-4 text-amber-300" />
-              <span>Subscribe for 1 Month via Kora (₦3,500)</span>
+              <span>Subscribe for 1 Month via Kora (₦2,000)</span>
               <ExternalLink className="w-4 h-4" />
             </button>
 
@@ -910,6 +928,59 @@ export const CreateWishWizard: React.FC<CreateWishWizardProps> = ({
             </div>
           </div>
 
+          {/* Automated Birthday Reminder Configuration Box */}
+          <div className="p-5 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-left space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="p-1.5 rounded-lg bg-amber-500/20 text-amber-300">
+                  <Bell className="w-4 h-4" />
+                </div>
+                <div>
+                  <h4 className="font-bold text-sm text-white">
+                    24-Hour Birthday Reminder Alert
+                  </h4>
+                  <p className="text-[11px] text-slate-400">
+                    Never forget to celebrate {celebrantName || 'your loved one'}.
+                  </p>
+                </div>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={reminderEnabled}
+                  onChange={(e) => setReminderEnabled(e.target.checked)}
+                  className="sr-only peer"
+                />
+                <div className="w-10 h-5 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-amber-500"></div>
+              </label>
+            </div>
+
+            {reminderEnabled && (
+              <div className="space-y-2.5 pt-1 text-xs">
+                <label className="flex items-center gap-2 text-slate-300 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={reminder24HoursBefore}
+                    onChange={(e) => setReminder24HoursBefore(e.target.checked)}
+                    className="rounded bg-black/40 border-white/20 text-amber-500"
+                  />
+                  <span>Trigger email &amp; browser alert <b>24 hours before</b> their birthday</span>
+                </label>
+
+                <div className="flex items-center gap-2">
+                  <Mail className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                  <input
+                    type="email"
+                    value={reminderEmail}
+                    onChange={(e) => setReminderEmail(e.target.value)}
+                    placeholder="Recipient email for reminder alerts"
+                    className="flex-1 bg-black/40 border border-white/15 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-amber-500 font-mono"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+
           <div className="mt-8 flex justify-between items-center pt-6 border-t border-white/10">
             <button
               type="button"
@@ -1052,6 +1123,20 @@ export const CreateWishWizard: React.FC<CreateWishWizardProps> = ({
                 </div>
               </>
             )}
+
+            <div className="flex justify-between items-center text-slate-400 pt-2 border-t border-white/10">
+              <span className="flex items-center gap-1.5 font-medium">
+                <Bell className="w-3.5 h-3.5 text-amber-400" />
+                <span>24h Reminder Alert:</span>
+              </span>
+              <button
+                type="button"
+                onClick={() => setIsReminderModalOpen(true)}
+                className="text-amber-300 hover:text-amber-200 underline font-semibold flex items-center gap-1 cursor-pointer"
+              >
+                <span>{createdWish.reminder?.enabled !== false ? 'Active (Configure)' : 'Paused (Set Up)'}</span>
+              </button>
+            </div>
           </div>
 
           {/* Action Buttons */}
@@ -1100,6 +1185,20 @@ export const CreateWishWizard: React.FC<CreateWishWizardProps> = ({
             🚀 <b>Experience the Tribute:</b> Clicking above opens the tribute starting with the celebratory fireworks canvas greeting, happy birthday serenade, custom theme colors, typewriter greetings, interactive &quot;Let&apos;s Celebrate&quot; surprise, candle-blowing cake, and your personal heartfelt epistle in <b>{createdWish.colorTheme.toUpperCase()}</b> theme!
           </p>
         </div>
+      )}
+
+      {/* Birthday Reminder Modal */}
+      {createdWish && (
+        <BirthdayReminderModal
+          isOpen={isReminderModalOpen}
+          onClose={() => setIsReminderModalOpen(false)}
+          wish={createdWish}
+          user={user}
+          onWishUpdated={(updated) => {
+            setCreatedWish(updated);
+            onWishCreated(updated);
+          }}
+        />
       )}
     </div>
   );

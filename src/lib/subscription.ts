@@ -19,6 +19,12 @@ export const KORA_PREMIUM_CHECKOUT_URL = 'https://test-checkout.korapay.com/pay/
 export const FREE_WISH_LIMIT = 3;
 
 /**
+ * 💎 PREMIUM SUBSCRIPTION PRICE
+ */
+export const PREMIUM_PRICE_NGN = 2000;
+export const PREMIUM_PRICE_FORMATTED = '₦2,000';
+
+/**
  * Check if the given email corresponds to the Birthwish Admin and Founder
  */
 export function isFounderAdmin(email?: string | null): boolean {

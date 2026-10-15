@@ -5,6 +5,7 @@ import { generateStandaloneBirthwishHtml } from '../lib/htmlExporter';
 import { generateShareableWishLink, generateWhatsAppShareUrl } from '../lib/wishEncoder';
 import { calculateDaysUntilBirthday } from '../lib/dateUtils';
 import { WhatsAppIcon } from './WhatsAppIcon';
+import { BirthdayReminderModal } from './BirthdayReminderModal';
 import {
   ResponsiveContainer,
   BarChart,
@@ -65,6 +66,7 @@ interface DashboardProps {
   onUpgradeClick?: () => void;
   onViewWish: (wish: Birthwish) => void;
   onDeleteWish?: (wishId: string) => void;
+  onWishUpdated?: (updatedWish: Birthwish) => void;
   theme?: 'dark' | 'light';
   onOpenTutorial?: () => void;
 }
@@ -76,6 +78,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   onUpgradeClick,
   onViewWish,
   onDeleteWish,
+  onWishUpdated,
   theme = 'light',
   onOpenTutorial,
 }) => {
@@ -88,6 +91,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const [notifStatus, setNotifStatus] = useState<NotificationStatus>(() => getNotificationStatus());
   const [notifBannerDismissed, setNotifBannerDismissed] = useState<boolean>(false);
   const [showChart, setShowChart] = useState<boolean>(true);
+  const [reminderWish, setReminderWish] = useState<Birthwish | null>(null);
+  const [isReminderModalOpen, setIsReminderModalOpen] = useState<boolean>(false);
 
   // Filter strictly to only birthwishes created by this logged in user
   const userWishes = user ? wishes.filter(w => w.userId === user.id) : [];
@@ -151,6 +156,11 @@ export const Dashboard: React.FC<DashboardProps> = ({
   // Check which wishes have birthdays TODAY
   const todayBirthdays = React.useMemo(() => {
     return upcomingWishesWithDays.filter(item => item.countdown.isToday);
+  }, [upcomingWishesWithDays]);
+
+  // Check which wishes have birthdays TOMORROW (exact 24 hours prior)
+  const tomorrowBirthdays = React.useMemo(() => {
+    return upcomingWishesWithDays.filter(item => item.countdown.isTomorrow);
   }, [upcomingWishesWithDays]);
 
   // On mount or wishes change, run automatic browser notification check for any birthdays today
@@ -722,6 +732,58 @@ export const Dashboard: React.FC<DashboardProps> = ({
           </div>
         )}
 
+        {/* Urgent: 24-Hour Birthday Alert Banner (Triggered 24 Hours Ahead) */}
+        {tomorrowBirthdays.length > 0 && (
+          <div className="p-4 rounded-2xl bg-gradient-to-r from-amber-500 via-orange-500 to-rose-600 text-white shadow-xl shadow-amber-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-4 animate-bounce-subtle">
+            <div className="flex items-center gap-3.5">
+              <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-white/80 shrink-0 shadow-md">
+                <img 
+                  src={tomorrowBirthdays[0].wish.mainImage} 
+                  alt={tomorrowBirthdays[0].wish.celebrantName} 
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="font-extrabold text-base tracking-wide flex items-center gap-1.5 font-cinzel">
+                    <Clock className="w-4 h-4 text-amber-200" />
+                    <span>⏰ 24-HOUR BIRTHDAY ALERT!</span>
+                  </span>
+                  <span className="px-2.5 py-0.5 rounded-full bg-black/30 text-amber-200 text-[10px] font-bold uppercase tracking-wider backdrop-blur-sm border border-amber-300/40">
+                    Tomorrow
+                  </span>
+                </div>
+                <p className="text-xs text-white/95 mt-0.5">
+                  Tomorrow is <span className="font-bold underline">{tomorrowBirthdays[0].wish.celebrantName}&apos;s</span> birthday! Automated 24h email &amp; browser alerts are active.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={() => {
+                  setReminderWish(tomorrowBirthdays[0].wish);
+                  setIsReminderModalOpen(true);
+                }}
+                className="px-3.5 py-2 rounded-full bg-black/40 hover:bg-black/60 text-white font-bold text-xs inline-flex items-center gap-1.5 transition-all cursor-pointer backdrop-blur-md border border-white/20"
+                title="Manage email and browser reminder settings"
+              >
+                <Bell className="w-3.5 h-3.5 text-amber-300" />
+                <span>Reminder Settings</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => onViewWish(tomorrowBirthdays[0].wish)}
+                className="px-4 py-2 rounded-full bg-white text-amber-800 hover:bg-amber-50 font-bold text-xs shadow-md inline-flex items-center gap-1.5 transition-all cursor-pointer"
+              >
+                <span>Review Tribute</span>
+                <Eye className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Dynamic Upcoming Birthday Alert Strip if any celebration is in <= 30 days and not today */}
         {nearestBirthday && nearestBirthday.countdown.daysRemaining <= 30 && !nearestBirthday.countdown.isToday && (
           <div 
@@ -1133,17 +1195,28 @@ export const Dashboard: React.FC<DashboardProps> = ({
                       </span>
                     )}
 
-                    {/* Test/Trigger Push Notification Button */}
+                    {/* Birthday Reminder Settings (24h & Day-of Alerts) */}
                     <button
-                      onClick={(e) => handleTestNotification(e, wish)}
-                      className={`p-2 rounded-full transition-colors cursor-pointer ${
-                        notifStatus.isEnabled
-                          ? isLight ? 'hover:bg-amber-100 text-amber-600' : 'hover:bg-amber-500/20 text-amber-400'
-                          : isLight ? 'hover:bg-slate-200 text-slate-400' : 'hover:bg-white/10 text-slate-400'
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setReminderWish(wish);
+                        setIsReminderModalOpen(true);
+                      }}
+                      className={`p-2 rounded-full transition-colors cursor-pointer relative ${
+                        wish.reminder?.enabled !== false
+                          ? isLight ? 'hover:bg-amber-100 text-amber-600 bg-amber-50' : 'hover:bg-amber-500/20 text-amber-400 bg-amber-500/10'
+                          : isLight ? 'hover:bg-slate-200 text-slate-400' : 'hover:bg-white/10 text-slate-500'
                       }`}
-                      title={notifStatus.isEnabled ? "Send test birthday notification" : "Enable birthday push notifications"}
+                      title={
+                        wish.reminder?.enabled !== false
+                          ? `Birthday Reminder Active (24h alert: ${wish.reminder?.reminderEmail || user?.email || 'email/browser'}). Click to manage.`
+                          : "Birthday Reminder Paused. Click to configure."
+                      }
                     >
                       <Bell className="w-3.5 h-3.5" />
+                      {wish.reminder?.enabled !== false && (
+                        <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+                      )}
                     </button>
 
                     {/* Download Standalone .html */}
@@ -1253,6 +1326,22 @@ export const Dashboard: React.FC<DashboardProps> = ({
           </div>
         </div>
       )}
+
+      {/* Birthday Reminder Configuration Modal */}
+      <BirthdayReminderModal
+        isOpen={isReminderModalOpen}
+        onClose={() => {
+          setIsReminderModalOpen(false);
+          setReminderWish(null);
+        }}
+        wish={reminderWish}
+        user={user}
+        onWishUpdated={(updated) => {
+          if (onWishUpdated) {
+            onWishUpdated(updated);
+          }
+        }}
+      />
     </div>
   );
 };

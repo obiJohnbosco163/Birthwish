@@ -12,6 +12,7 @@ import { CelebrantLastPage } from './CelebrantLastPage';
 import { PaymentModal } from './PaymentModal';
 import { PayoutModal } from './PayoutModal';
 import { WhatsAppIcon } from './WhatsAppIcon';
+import { BirthdayReminderModal } from './BirthdayReminderModal';
 import confetti from 'canvas-confetti';
 import { 
   ArrowLeft, 
@@ -25,7 +26,8 @@ import {
   Crown,
   Printer,
   CreditCard,
-  Gift
+  Gift,
+  Bell
 } from 'lucide-react';
 
 interface CelebrantViewProps {
@@ -54,6 +56,7 @@ export const CelebrantView: React.FC<CelebrantViewProps> = ({
   const [copyFeedback, setCopyFeedback] = useState<boolean>(false);
   const [isDownloading, setIsDownloading] = useState<boolean>(false);
   const [downloadNotice, setDownloadNotice] = useState<string | null>(null);
+  const [isReminderModalOpen, setIsReminderModalOpen] = useState<boolean>(false);
 
   // Cash Gift / Claim States
   const hasPaymentStatus = Boolean(
@@ -429,6 +432,16 @@ export const CelebrantView: React.FC<CelebrantViewProps> = ({
               <span className="hidden md:inline">{isDownloading ? 'Exporting...' : 'Download .HTML'}</span>
             </button>
 
+            {/* Birthday Reminder Settings */}
+            <button
+              onClick={() => setIsReminderModalOpen(true)}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-mono-tech border border-amber-400/40 bg-amber-400/10 hover:bg-amber-400/25 text-amber-200 transition-all cursor-pointer shadow-sm active:scale-95"
+              title="Set or manage automated 24-hour birthday reminders for this celebrant"
+            >
+              <Bell className="w-3.5 h-3.5 text-amber-300" />
+              <span className="hidden sm:inline">24h Reminder</span>
+            </button>
+
             {/* Print Feature (window.print()) */}
             <button
               onClick={handlePrint}
@@ -642,6 +655,19 @@ export const CelebrantView: React.FC<CelebrantViewProps> = ({
           <span>✓ {downloadNotice}</span>
         </div>
       )}
+
+      {/* Birthday Reminder Modal */}
+      <BirthdayReminderModal
+        isOpen={isReminderModalOpen}
+        onClose={() => setIsReminderModalOpen(false)}
+        wish={wish}
+        user={null}
+        onWishUpdated={(updated) => {
+          if (onUpdateWish) {
+            onUpdateWish(updated);
+          }
+        }}
+      />
     </div>
   );
 };
